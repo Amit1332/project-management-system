@@ -1,25 +1,26 @@
-const ApiError = require("../utils/ApiError");
-const { HTTP_STATUS_CODES } = require("@simple-node/http-status-codes");
+const validate = (schema) => {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
 
-const validate = (schema) => (req, res, next) => {
-  const validSchema = schema.pick ? schema : schema;
-  let objectToValidate = {};
-  if (schema.shape?.body) objectToValidate.body = req.body;
-  if (schema.shape?.query) objectToValidate.query = req.query;
-  if (schema.shape?.params) objectToValidate.params = req.params;
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: error.details.map((detail) => ({
+          field: detail.path.join("."),
+          message: detail.message,
+        })),
+      });
+    }
 
-  const result = schema.safeParse(objectToValidate);
+    // Use Joi's sanitized/validated value
+    req.body = value;
 
-  if (!result.success) {
-    const errorMessage = result.error.issues
-      .map((issue) => `${issue.message.toLowerCase()}`)
-      .join(", ");
-
-    return next(new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, errorMessage));
-  }
-
-  Object.assign(req, result.data);
-  return next();
+    next();
+  };
 };
 
 module.exports = validate;

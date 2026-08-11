@@ -11,7 +11,7 @@ const activityLogSchema = new mongoose.Schema(
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
-      default: null,
+      required: true,
     },
 
     taskId: {
@@ -20,7 +20,7 @@ const activityLogSchema = new mongoose.Schema(
       default: null,
     },
 
-    actorId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -32,15 +32,18 @@ const activityLogSchema = new mongoose.Schema(
         "PROJECT_CREATED",
         "PROJECT_UPDATED",
         "PROJECT_ARCHIVED",
+
         "PROJECT_MEMBER_ADDED",
         "PROJECT_MEMBER_REMOVED",
+        "PROJECT_MEMBER_ROLE_CHANGED",
 
         "TASK_CREATED",
         "TASK_UPDATED",
+        "TASK_ARCHIVED",
         "TASK_ASSIGNED",
+        "TASK_UNASSIGNED",
         "TASK_STATUS_CHANGED",
         "TASK_PRIORITY_CHANGED",
-        "TASK_ARCHIVED",
 
         "COMMENT_CREATED",
         "COMMENT_UPDATED",
@@ -51,7 +54,7 @@ const activityLogSchema = new mongoose.Schema(
 
     entityType: {
       type: String,
-      enum: ["PROJECT", "TASK", "COMMENT", "MEMBER"],
+      enum: ["PROJECT", "TASK", "COMMENT", "PROJECT_MEMBER"],
       required: true,
     },
 
@@ -69,21 +72,6 @@ const activityLogSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-activityLogSchema.index({
-  projectId: 1,
-  createdAt: -1,
-});
-
-activityLogSchema.index({
-  organizationId: 1,
-  createdAt: -1,
-});
-
-activityLogSchema.index({
-  organizationId: 1,
-  createdAt: -1,
-});
 
 const ActivityLogs = mongoose.model("ActivityLog", activityLogSchema);
 module.exports = ActivityLogs;

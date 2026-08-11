@@ -70,6 +70,6 @@ projectSchema.index({
   dueDate: 1,
 });
 
-const Projects = mongoose.mongoose.model("Project", projectSchema);
+const Projects = mongoose.model("Project", projectSchema);
 
 module.exports = Projects;

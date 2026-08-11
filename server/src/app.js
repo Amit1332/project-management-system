@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const app = express();
-// const baseRoutes = require("./routes");
+const baseRoutes = require("./routes");
 const { errorConverter, errorHandler } = require("./middlewares/error");
 const morgan = require("./utils/morgan");
 const { authLimiter } = require("./middlewares/rateLimiter");
@@ -30,7 +30,7 @@ app.use(
 if (process.env.NODE_ENV === "production") {
   app.use("/api/v1/auth", authLimiter);
 }
-// app.use("/api", baseRoutes);
+app.use("/api", baseRoutes);
 
 app.use("/ping", (req, res) => {
   return res.json({});
@@ -46,4 +46,3 @@ app.use(errorConverter);
 // handle error
 app.use(errorHandler);
 module.exports = app;
-

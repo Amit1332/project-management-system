@@ -6,12 +6,13 @@ import authReducer from "../features/auth/authSlice";
 
 // RTK Query APIs
 import { authApi } from "../features/auth/api/authApi";
-// import { organizationApi } from "../features/organizations/api/organizationApi";
-// import { projectApi } from "../features/projects/api/projectApi";
-// import { taskApi } from "../features/tasks/api/taskApi";
-// import { commentApi } from "../features/comments/api/commentApi";
-// import { activityApi } from "../features/activity/api/activityApi";
-// import { dashboardApi } from "../features/dashboard/api/dashboardApi";
+import { organizationApi } from "../features/organizations/api/organizationApi";
+import { projectApi } from "../features/projects/api/projectApi";
+import { taskApi } from "../features/tasks/api/taskApi";
+import { commentApi } from "../features/comments/api/commentApi";
+import { activityApi } from "../features/activity/api/activityApi";
+import { notificationApi } from "../features/notifications/api/notificationApi";
+import { analyticsApi } from "../features/analytics/api/analyticsApi";
 
 export const store = configureStore({
   reducer: {
@@ -20,27 +21,25 @@ export const store = configureStore({
 
     // RTK Query
     [authApi.reducerPath]: authApi.reducer,
-
-    // Add other API reducers as you create them
-    // [organizationApi.reducerPath]: organizationApi.reducer,
-    // [projectApi.reducerPath]: projectApi.reducer,
-    // [taskApi.reducerPath]: taskApi.reducer,
-    // [commentApi.reducerPath]: commentApi.reducer,
-    // [activityApi.reducerPath]: activityApi.reducer,
-    // [dashboardApi.reducerPath]: dashboardApi.reducer,
+    [organizationApi.reducerPath]: organizationApi.reducer,
+    [projectApi.reducerPath]: projectApi.reducer,
+    [taskApi.reducerPath]: taskApi.reducer,
+    [commentApi.reducerPath]: commentApi.reducer,
+    [activityApi.reducerPath]: activityApi.reducer,
+    [notificationApi.reducerPath]: notificationApi.reducer,
+    [analyticsApi.reducerPath]: analyticsApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       authApi.middleware,
-
-      // Add other API middleware here
-      // organizationApi.middleware,
-      // projectApi.middleware,
-      // taskApi.middleware,
-      // commentApi.middleware,
-      // activityApi.middleware,
-      // dashboardApi.middleware,
+      organizationApi.middleware,
+      projectApi.middleware,
+      taskApi.middleware,
+      commentApi.middleware,
+      activityApi.middleware,
+      notificationApi.middleware,
+      analyticsApi.middleware
     ),
 
   devTools: import.meta.env.DEV,

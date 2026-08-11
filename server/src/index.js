@@ -4,12 +4,18 @@ dotenv.config(path.join(__dirname, "../.env"));
 const app = require("./app");
 const dbConnect = require("./config/database");
 
+const http = require("http");
+const { initSocket } = require("./socket");
+
 const PORT = process.env.PORT || 3000;
 
 let server;
 const startServer = () => {
   try {
-    server = app.listen(PORT, () => {
+    const httpServer = http.createServer(app);
+    initSocket(httpServer);
+
+    server = httpServer.listen(PORT, () => {
       dbConnect();
       console.log(`Server is running on port ${PORT}`);
     });

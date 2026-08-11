@@ -1,28 +1,61 @@
-const jwt = require("jsonwebtoken");
-const catchAsync = require("../utils/catchAsync");
-const users = require("../models/user.models");
-const ApiError = require("../utils/ApiError");
-const { HTTP_STATUS_CODES } = require("@simple-node/http-status-codes");
+const User = require("../models/users.model");
+const { verifyAccessToken } = require("../utils/jwt");
+const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-const SECRET_KEY = process.env.SECRET_KEY;
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
 
-exports.isAuthenticated = catchAsync(async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
+    const [scheme, token] = authHeader.split(" ");
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return next(
-      new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, "please login first"),
-    );
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid authorization header",
+      });
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    const user = await User.findOne({
+      _id: decoded.userId,
+      isActive: true,
+    }).select("_id name email avatar isActive");
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found or inactive",
+      });
+    }
+
+    req.user = user;
+
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Access token expired",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid access token",
+      });
+    }
+
+    next(error);
   }
+};
 
-  const token = authHeader.split(" ")[1];
-  const decodedData = await jwt.verify(token, SECRET_KEY);
-
-  req.user = await users.findById(decodedData._id);
-
-  if (!req.user) {
-    return next(new ApiError(HTTP_STATUS_CODES.BAD_REQUEST, "Not found"));
-  }
-
-  next();
-});
+module.exports = {
+  authenticate,
+};

@@ -6,11 +6,13 @@ import { useSelector } from "react-redux";
 const ProtectedRoute = () => {
   const location = useLocation();
 
-  const { user, isAuthenticated } = useSelector(
+  const { token, isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
-  if (!isAuthenticated || !user) {
+  const hasToken = isAuthenticated || Boolean(token) || Boolean(localStorage.getItem("token"));
+
+  if (!hasToken) {
     return (
       <Navigate
         to="/login"

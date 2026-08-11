@@ -4,11 +4,13 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 const PublicRoute = () => {
-  const { user, isAuthenticated } = useSelector(
+  const { token, isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
-  if (isAuthenticated && user) {
+  const hasToken = (isAuthenticated && Boolean(token)) || Boolean(localStorage.getItem("token"));
+
+  if (hasToken) {
     return <Navigate to="/dashboard" replace />;
   }
 

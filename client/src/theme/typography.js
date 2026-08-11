@@ -2,57 +2,64 @@
 
 const typography = {
   fontFamily: [
-    "Inter",
+    '"Plus Jakarta Sans"',
+    '"Inter"',
     "-apple-system",
     "BlinkMacSystemFont",
     '"Segoe UI"',
     "Roboto",
-    '"Helvetica Neue"',
-    "Arial",
     "sans-serif",
   ].join(","),
 
   h1: {
-    fontSize: "2rem",
-    fontWeight: 700,
-    lineHeight: 1.25,
-    letterSpacing: "-0.02em",
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
+    fontSize: "2.25rem",
+    fontWeight: 800,
+    lineHeight: 1.2,
+    letterSpacing: "-0.03em",
   },
 
   h2: {
-    fontSize: "1.75rem",
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
+    fontSize: "1.875rem",
+    fontWeight: 800,
+    lineHeight: 1.25,
+    letterSpacing: "-0.025em",
+  },
+
+  h3: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
+    fontSize: "1.5rem",
     fontWeight: 700,
     lineHeight: 1.3,
     letterSpacing: "-0.02em",
   },
 
-  h3: {
-    fontSize: "1.5rem",
+  h4: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
+    fontSize: "1.25rem",
     fontWeight: 700,
     lineHeight: 1.35,
-  },
-
-  h4: {
-    fontSize: "1.25rem",
-    fontWeight: 600,
-    lineHeight: 1.4,
+    letterSpacing: "-0.015em",
   },
 
   h5: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
     fontSize: "1.125rem",
-    fontWeight: 600,
-    lineHeight: 1.45,
+    fontWeight: 700,
+    lineHeight: 1.4,
   },
 
   h6: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
     fontSize: "1rem",
-    fontWeight: 600,
-    lineHeight: 1.5,
+    fontWeight: 700,
+    lineHeight: 1.45,
   },
 
   subtitle1: {
     fontSize: "1rem",
-    fontWeight: 500,
+    fontWeight: 600,
     lineHeight: 1.5,
   },
 
@@ -75,6 +82,7 @@ const typography = {
   },
 
   button: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
     fontSize: "0.875rem",
     fontWeight: 600,
     lineHeight: 1.5,
@@ -83,13 +91,14 @@ const typography = {
 
   caption: {
     fontSize: "0.75rem",
-    fontWeight: 400,
+    fontWeight: 500,
     lineHeight: 1.4,
   },
 
   overline: {
+    fontFamily: '"Plus Jakarta Sans", sans-serif',
     fontSize: "0.6875rem",
-    fontWeight: 600,
+    fontWeight: 700,
     lineHeight: 1.5,
     letterSpacing: "0.08em",
     textTransform: "uppercase",

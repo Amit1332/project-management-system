@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const notificationSchema = new mongoose.Schema(
   {
     organizationId: {
@@ -24,9 +25,11 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "TASK_ASSIGNED",
         "TASK_STATUS_CHANGED",
-        "MENTIONED",
+        "TASK_COMMENTED",
         "PROJECT_MEMBER_ADDED",
-        "TASK_DUE_SOON",
+        "PROJECT_MEMBER_REMOVED",
+        "PROJECT_MEMBER_ROLE_CHANGED",
+        "MENTION",
       ],
       required: true,
     },
@@ -34,20 +37,32 @@ const notificationSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 200,
     },
 
     message: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 1000,
     },
 
-    entityType: {
-      type: String,
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Project",
       default: null,
     },
 
-    entityId: {
+    taskId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+      default: null,
+    },
+
+    commentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
       default: null,
     },
 
@@ -59,6 +74,11 @@ const notificationSchema = new mongoose.Schema(
     readAt: {
       type: Date,
       default: null,
+    },
+
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
   },
   {

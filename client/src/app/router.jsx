@@ -1,6 +1,6 @@
 // src/app/router.jsx
 
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "../routes/ProtectedRoute";
 import PublicRoute from "../routes/PublicRoute";
@@ -29,6 +29,12 @@ import ProfilePage from "../features/profile/pages/ProfilePage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 
 export const router = createBrowserRouter([
+  // Root Redirect
+  {
+    path: "/",
+    element: <Navigate to="/dashboard" replace />,
+  },
+
   // =========================
   // PUBLIC ROUTES
   // =========================
@@ -101,6 +107,11 @@ export const router = createBrowserRouter([
           },
 
           {
+            path: "/projects/:projectId/tasks/:taskId",
+            element: <TaskDetailsPage />,
+          },
+
+          {
             path: "/projects/:projectId/board",
             element: <KanbanPage />,
           },
@@ -152,11 +163,15 @@ export const router = createBrowserRouter([
   },
 
   // =========================
-  // UNAUTHORIZED
+  // UNAUTHORIZED & CATCH-ALL
   // =========================
 
   {
     path: "/unauthorized",
     element: <UnauthorizedPage />,
+  },
+  {
+    path: "*",
+    element: <Navigate to="/dashboard" replace />,
   },
 ]);

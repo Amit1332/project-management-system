@@ -33,7 +33,7 @@ const taskSchema = new mongoose.Schema(
       default: null,
     },
 
-    reporterId: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -41,7 +41,7 @@ const taskSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["TODO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED"],
+      enum: ["TODO", "IN_PROGRESS", "IN_REVIEW", "COMPLETED", "DONE"],
       default: "TODO",
     },
 
@@ -59,6 +59,11 @@ const taskSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
       default: null,
+    },
+
+    archived: {
+      type: Boolean,
+      default: false,
     },
 
     archivedAt: {
