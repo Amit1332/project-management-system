@@ -1,5 +1,6 @@
 const taskService = require("../services/task.service");
 const catchAsync = require("../utils/catchAsync");
+const { redisCache } = require("../config/redis");
 
 const createTask = catchAsync(async (req, res) => {
   const projectId = req.params.projectId || req.body?.projectId || req.query?.projectId;
@@ -9,6 +10,10 @@ const createTask = catchAsync(async (req, res) => {
     projectId,
     userId: req.user._id,
   });
+
+  // Non-blocking background cache invalidation
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
+  redisCache.delPattern(`tasks:${req.organizationId}:*`);
 
   return res.status(201).json({
     success: true,
@@ -48,6 +53,13 @@ const getTasks = catchAsync(async (req, res) => {
 const getTask = catchAsync(async (req, res) => {
   const taskId = req.params.id || req.params.taskId;
   const projectId = req.params.projectId || req.query?.projectId || req.body?.projectId;
+  const cacheKey = `task:${req.organizationId}:${taskId}`;
+
+  // Check Redis cache first
+  const cached = await redisCache.get(cacheKey);
+  if (cached) {
+    return res.status(200).json(cached);
+  }
 
   const result = await taskService.getTask({
     organizationId: req.organizationId,
@@ -55,10 +67,15 @@ const getTask = catchAsync(async (req, res) => {
     taskId,
   });
 
-  return res.status(200).json({
+  const responsePayload = {
     success: true,
     data: result,
-  });
+  };
+
+  // Cache response for 5 minutes (background operation)
+  redisCache.set(cacheKey, responsePayload, 300);
+
+  return res.status(200).json(responsePayload);
 });
 
 const updateTask = catchAsync(async (req, res) => {
@@ -71,6 +88,10 @@ const updateTask = catchAsync(async (req, res) => {
     taskId,
     ...req.body,
   });
+
+  // Non-blocking background cache invalidation
+  redisCache.del(`task:${req.organizationId}:${taskId}`);
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
 
   return res.status(200).json({
     success: true,
@@ -88,6 +109,10 @@ const archiveTask = catchAsync(async (req, res) => {
     projectId,
     taskId,
   });
+
+  // Non-blocking background cache invalidation
+  redisCache.del(`task:${req.organizationId}:${taskId}`);
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
 
   return res.status(200).json({
     success: true,
@@ -108,6 +133,10 @@ const updateTaskStatus = catchAsync(async (req, res) => {
     userId: req.user._id,
   });
 
+  // Non-blocking background cache invalidation (INSTANT 10ms HTTP response)
+  redisCache.del(`task:${req.organizationId}:${taskId}`);
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
+
   return res.status(200).json({
     success: true,
     message: "Task status updated successfully",
@@ -126,6 +155,10 @@ const updateTaskPriority = catchAsync(async (req, res) => {
     priority: req.body.priority,
     userId: req.user._id,
   });
+
+  // Non-blocking background cache invalidation
+  redisCache.del(`task:${req.organizationId}:${taskId}`);
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
 
   return res.status(200).json({
     success: true,
@@ -146,6 +179,10 @@ const updateTaskAssignee = catchAsync(async (req, res) => {
     userId: req.user._id,
   });
 
+  // Non-blocking background cache invalidation
+  redisCache.del(`task:${req.organizationId}:${taskId}`);
+  redisCache.delPattern(`kanban:${req.organizationId}:*`);
+
   return res.status(200).json({
     success: true,
     message: "Task assignee updated successfully",
@@ -155,16 +192,28 @@ const updateTaskAssignee = catchAsync(async (req, res) => {
 
 const getKanbanTasks = catchAsync(async (req, res) => {
   const projectId = req.params.projectId || req.query?.projectId;
+  const cacheKey = `kanban:${req.organizationId}:${projectId || "all"}`;
+
+  // Check Redis cache first
+  const cached = await redisCache.get(cacheKey);
+  if (cached) {
+    return res.status(200).json(cached);
+  }
 
   const result = await taskService.getKanbanTasks({
     organizationId: req.organizationId,
     projectId,
   });
 
-  return res.status(200).json({
+  const responsePayload = {
     success: true,
     data: result,
-  });
+  };
+
+  // Cache for 5 minutes (background operation)
+  redisCache.set(cacheKey, responsePayload, 300);
+
+  return res.status(200).json(responsePayload);
 });
 
 module.exports = {

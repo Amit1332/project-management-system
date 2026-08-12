@@ -9,7 +9,7 @@ const {
   archiveProject,
   addProjectMember,
   getProjectMembers,
-  updateProjectMemberRole,
+  changeProjectMemberRole,
   removeProjectMember,
 } = require("../controllers/project.controller");
 
@@ -84,7 +84,7 @@ router.patch(
   requireTenant,
   requireProjectRole("MANAGER"),
   validate(updateProjectMemberRoleSchema),
-  updateProjectMemberRole,
+  changeProjectMemberRole,
 );
 
 router.delete(

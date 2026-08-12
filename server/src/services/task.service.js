@@ -219,6 +219,7 @@ const getTask = async ({ organizationId, projectId, taskId }) => {
   if (projectId) query.projectId = projectId;
 
   const task = await Task.findOne(query)
+    .select("-__v")
     .populate("assigneeId", "_id name email avatar")
     .populate("createdBy", "_id name email")
     .lean();
@@ -509,13 +510,6 @@ const updateTaskAssignee = async ({
 };
 
 const getKanbanTasks = async ({ organizationId, projectId }) => {
-  if (projectId) {
-    await verifyProject({
-      organizationId,
-      projectId,
-    });
-  }
-
   const query = {
     organizationId,
     archived: { $ne: true },

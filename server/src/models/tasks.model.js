@@ -111,6 +111,16 @@ taskSchema.index({
 });
 
 taskSchema.index({
+  organizationId: 1,
+  projectId: 1,
+  archived: 1,
+  createdAt: -1,
+});
+taskSchema.index({
+  _id: 1,
+  organizationId: 1,
+});
+taskSchema.index({
   title: "text",
   description: "text",
 });
