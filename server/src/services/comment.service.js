@@ -223,6 +223,33 @@ const getComments = async ({ organizationId, projectId, taskId }) => {
   }));
 };
 
+const checkCanManageComments = async ({ organizationId, projectId, userId }) => {
+  if (!userId) return false;
+
+  const orgMember = await OrganizationMember.findOne({
+    organizationId,
+    userId,
+    status: "ACTIVE",
+  }).select("role").lean();
+
+  if (orgMember && ["OWNER", "ADMIN"].includes(orgMember.role)) {
+    return true;
+  }
+
+  if (projectId) {
+    const projectMember = await ProjectMember.findOne({
+      projectId,
+      userId,
+    }).select("role").lean();
+
+    if (projectMember && ["MANAGER", "OWNER"].includes(projectMember.role)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const updateComment = async ({
   organizationId,
   projectId,
@@ -240,14 +267,25 @@ const updateComment = async ({
   const comment = await Comment.findOne({
     _id: commentId,
     organizationId,
-    projectId,
     taskId,
-    userId,
   });
 
   if (!comment) {
-    const error = new Error("Comment not found or you are not the owner");
+    const error = new Error("Comment not found");
     error.statusCode = 404;
+    throw error;
+  }
+
+  const activeProjectId = projectId || comment.projectId;
+  const canManage = await checkCanManageComments({
+    organizationId,
+    projectId: activeProjectId,
+    userId,
+  });
+
+  if (!canManage) {
+    const error = new Error("Project members with MEMBER role do not have permission to edit comments");
+    error.statusCode = 403;
     throw error;
   }
 
@@ -256,9 +294,17 @@ const updateComment = async ({
 
   await comment.save();
 
-  return Comment.findById(comment._id)
+  const updatedComment = await Comment.findById(comment._id)
     .populate("userId", "_id name email avatar")
+    .populate("authorId", "_id name email avatar")
     .lean();
+
+  emitToTask(taskId, "comment:updated", updatedComment);
+  if (activeProjectId) {
+    emitToProject(activeProjectId, "comment:updated", updatedComment);
+  }
+
+  return updatedComment;
 };
 
 const deleteComment = async ({
@@ -274,18 +320,36 @@ const deleteComment = async ({
     taskId,
   });
 
-  const comment = await Comment.findOneAndDelete({
+  const comment = await Comment.findOne({
     _id: commentId,
     organizationId,
-    projectId,
     taskId,
-    userId,
   });
 
   if (!comment) {
-    const error = new Error("Comment not found or you are not the owner");
+    const error = new Error("Comment not found");
     error.statusCode = 404;
     throw error;
+  }
+
+  const activeProjectId = projectId || comment.projectId;
+  const canManage = await checkCanManageComments({
+    organizationId,
+    projectId: activeProjectId,
+    userId,
+  });
+
+  if (!canManage) {
+    const error = new Error("Project members with MEMBER role do not have permission to delete comments");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  await Comment.deleteOne({ _id: comment._id });
+
+  emitToTask(taskId, "comment:deleted", { _id: commentId, taskId });
+  if (activeProjectId) {
+    emitToProject(activeProjectId, "comment:deleted", { _id: commentId, taskId });
   }
 
   return {

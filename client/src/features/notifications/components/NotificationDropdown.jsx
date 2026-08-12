@@ -28,7 +28,7 @@ import {
 } from "../api/notificationApi";
 import { useNavigate } from "react-router-dom";
 import { getSocket, onSocketEvent } from "../../../services/socket";
-import { formatDate } from "../../../utils/formatDate";
+import { formatDateTime } from "../../../utils/formatDate";
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
@@ -321,7 +321,7 @@ const NotificationDropdown = () => {
                           mt={0.3}
                           display="block"
                         >
-                          {formatDate(item.createdAt)}
+                          {formatDateTime(item.createdAt)}
                         </Typography>
                       </Box>
                     }

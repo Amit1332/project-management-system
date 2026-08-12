@@ -35,9 +35,11 @@ import EmptyState from "../../../components/common/EmptyState";
 import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { formatError } from "../../../utils/formatError";
 import { formatRelativeDate } from "../../../utils/formatDate";
-import { getSocket, joinRoom } from "../../../services/socket";
+import { getSocket, joinRoom, onSocketEvent } from "../../../services/socket";
 
-const TaskCommentsSection = ({ projectId, taskId }) => {
+import { useGetProjectMembersQuery } from "../../projects/api/projectApi";
+
+const TaskCommentsSection = ({ projectId, taskId, canManageTask = false }) => {
   const { user: currentUser, currentOrganization } = useSelector((state) => state.auth);
 
   const {
@@ -55,9 +57,23 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
     skip: !currentOrganization?._id,
   });
 
-  const membersList = membersData?.data || [];
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId, organizationId: currentOrganization?._id },
+    { skip: !projectId }
+  );
 
-  // Real-time socket listener for new comments
+  const membersList = membersData?.data || [];
+  const projectMembersList = projectMembersData?.data || [];
+
+  const myOrgMember = membersList.find((m) => (m.userId?._id || m.userId) === currentUser?._id);
+  const myProjectMember = projectMembersList.find((m) => (m.userId?._id || m.userId) === currentUser?._id);
+
+  const canManage =
+    canManageTask ||
+    ["OWNER", "ADMIN"].includes(myOrgMember?.role) ||
+    ["MANAGER", "OWNER"].includes(myProjectMember?.role);
+
+  // Real-time socket listeners for comment create, update, and delete
   React.useEffect(() => {
     if (taskId) {
       joinRoom("task", taskId);
@@ -66,16 +82,19 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
       joinRoom("project", projectId);
     }
 
-    const socket = getSocket();
-    if (socket) {
-      const handleNewComment = () => {
-        refetch();
-      };
-      socket.on("comment:created", handleNewComment);
-      return () => {
-        socket.off("comment:created", handleNewComment);
-      };
-    }
+    const handleCommentChange = () => {
+      refetch();
+    };
+
+    const unsubs = [
+      onSocketEvent("comment:created", handleCommentChange),
+      onSocketEvent("comment:updated", handleCommentChange),
+      onSocketEvent("comment:deleted", handleCommentChange),
+    ];
+
+    return () => {
+      unsubs.forEach((unsub) => unsub && unsub());
+    };
   }, [projectId, taskId, refetch]);
 
   const [createComment, { isLoading: isCreating }] = useCreateCommentMutation();
@@ -521,7 +540,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
 
                   {/* Actions & Collapse Toggle */}
                   <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "4px", flexShrink: 0 }}>
-                    {isAuthor && !isEditing && (
+                    {canManage && !isEditing && (
                       <>
                         <IconButton size="small" onClick={() => handleStartEdit(comment)} title="Edit comment">
                           <Edit2 size={15} color="#64748B" />

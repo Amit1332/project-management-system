@@ -365,10 +365,46 @@ const updateTaskStatus = async ({
       metadata: { newStatus: status, title: task.title },
     });
 
-    if (task.assigneeId && userId && task.assigneeId._id.toString() !== userId.toString()) {
+    // Collect unique recipients to notify (excluding the user updating the status)
+    const recipientIds = new Set();
+
+    // 1. Notify Task Assignee
+    const assigneeIdStr = task.assigneeId?._id?.toString() || task.assigneeId?.toString();
+    if (assigneeIdStr && userId && assigneeIdStr !== userId.toString()) {
+      recipientIds.add(assigneeIdStr);
+    }
+
+    // 2. Notify Task Creator
+    const creatorIdStr = task.createdBy?._id?.toString() || task.createdBy?.toString();
+    if (creatorIdStr && userId && creatorIdStr !== userId.toString()) {
+      recipientIds.add(creatorIdStr);
+    }
+
+    // 3. Notify Project Managers & Project Owner
+    if (activeProjectId) {
+      const project = await Project.findById(activeProjectId).select("ownerId name").lean();
+      if (project?.ownerId && userId && project.ownerId.toString() !== userId.toString()) {
+        recipientIds.add(project.ownerId.toString());
+      }
+
+      const projectManagers = await ProjectMember.find({
+        projectId: activeProjectId,
+        role: "MANAGER",
+      }).select("userId").lean();
+
+      projectManagers.forEach((m) => {
+        const mUserId = m.userId?.toString();
+        if (mUserId && userId && mUserId !== userId.toString()) {
+          recipientIds.add(mUserId);
+        }
+      });
+    }
+
+    // Send notification to all stakeholders
+    for (const recipientId of recipientIds) {
       await createNotification({
         organizationId,
-        recipientId: task.assigneeId._id,
+        recipientId,
         actorId: userId,
         type: "TASK_STATUS_CHANGED",
         title: "Task status updated",
@@ -378,7 +414,7 @@ const updateTaskStatus = async ({
       });
     }
   } catch (err) {
-    console.error("Error creating activity log for task status update:", err);
+    console.error("Error creating activity log/notifications for task status update:", err);
   }
 
   return task;
