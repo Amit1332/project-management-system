@@ -1,5 +1,4 @@
-// src/app/router.jsx
-
+import React, { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "../routes/ProtectedRoute";
@@ -8,25 +7,41 @@ import RoleRoute from "../routes/RoleRoute";
 
 import AppLayout from "../components/layout/AppLayout";
 import AuthLayout from "../components/layout/AuthLayout";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 
-import LoginPage from "../features/auth/pages/LoginPage";
-import RegisterPage from "../features/auth/pages/RegisterPage";
+// Lazy-loaded page components for route-level code-splitting
+const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"));
+const RegisterPage = lazy(() => import("../features/auth/pages/RegisterPage"));
+const DashboardPage = lazy(() => import("../features/dashboard/pages/DashboardPage"));
+const ProjectsPage = lazy(() => import("../features/projects/pages/ProjectsPage"));
+const ProjectDetailsPage = lazy(() => import("../features/projects/pages/ProjectDetailsPage"));
+const TasksPage = lazy(() => import("../features/tasks/pages/TasksPage"));
+const TaskDetailsPage = lazy(() => import("../features/tasks/pages/TaskDetailsPage"));
+const KanbanPage = lazy(() => import("../features/tasks/pages/KanbanPage"));
+const OrganizationsPage = lazy(() => import("../features/organizations/pages/OrganizationsPage"));
+const OrganizationDetailsPage = lazy(() => import("../features/organizations/pages/OrganizationDetailsPage"));
+const ProfilePage = lazy(() => import("../features/profile/pages/ProfilePage"));
+const UnauthorizedPage = lazy(() => import("../pages/UnauthorizedPage"));
 
-import DashboardPage from "../features/dashboard/pages/DashboardPage";
+// Suspense Fallback Wrapper
+const Loadable = (Component) => (props) => (
+  <Suspense fallback={<LoadingSpinner label="Loading page..." minHeight="60vh" />}>
+    <Component {...props} />
+  </Suspense>
+);
 
-import ProjectsPage from "../features/projects/pages/ProjectsPage";
-import ProjectDetailsPage from "../features/projects/pages/ProjectDetailsPage";
-
-import TasksPage from "../features/tasks/pages/TasksPage";
-import TaskDetailsPage from "../features/tasks/pages/TaskDetailsPage";
-import KanbanPage from "../features/tasks/pages/KanbanPage";
-
-import OrganizationsPage from "../features/organizations/pages/OrganizationsPage";
-import OrganizationDetailsPage from "../features/organizations/pages/OrganizationDetailsPage";
-
-import ProfilePage from "../features/profile/pages/ProfilePage";
-
-import UnauthorizedPage from "../pages/UnauthorizedPage";
+const LazyLoginPage = Loadable(LoginPage);
+const LazyRegisterPage = Loadable(RegisterPage);
+const LazyDashboardPage = Loadable(DashboardPage);
+const LazyProjectsPage = Loadable(ProjectsPage);
+const LazyProjectDetailsPage = Loadable(ProjectDetailsPage);
+const LazyTasksPage = Loadable(TasksPage);
+const LazyTaskDetailsPage = Loadable(TaskDetailsPage);
+const LazyKanbanPage = Loadable(KanbanPage);
+const LazyOrganizationsPage = Loadable(OrganizationsPage);
+const LazyOrganizationDetailsPage = Loadable(OrganizationDetailsPage);
+const LazyProfilePage = Loadable(ProfilePage);
+const LazyUnauthorizedPage = Loadable(UnauthorizedPage);
 
 export const router = createBrowserRouter([
   // Root Redirect
@@ -47,11 +62,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/login",
-            element: <LoginPage />,
+            element: <LazyLoginPage />,
           },
           {
             path: "/register",
-            element: <RegisterPage />,
+            element: <LazyRegisterPage />,
           },
         ],
       },
@@ -70,56 +85,56 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "/dashboard",
-            element: <DashboardPage />,
+            element: <LazyDashboardPage />,
           },
 
           // Organizations
           {
             path: "/organizations",
-            element: <OrganizationsPage />,
+            element: <LazyOrganizationsPage />,
           },
 
           {
             path: "/organizations/:organizationId",
-            element: <OrganizationDetailsPage />,
+            element: <LazyOrganizationDetailsPage />,
           },
 
           // Projects
           {
             path: "/projects",
-            element: <ProjectsPage />,
+            element: <LazyProjectsPage />,
           },
 
           {
             path: "/projects/:projectId",
-            element: <ProjectDetailsPage />,
+            element: <LazyProjectDetailsPage />,
           },
 
           // Tasks
           {
             path: "/tasks",
-            element: <TasksPage />,
+            element: <LazyTasksPage />,
           },
 
           {
             path: "/tasks/:taskId",
-            element: <TaskDetailsPage />,
+            element: <LazyTaskDetailsPage />,
           },
 
           {
             path: "/projects/:projectId/tasks/:taskId",
-            element: <TaskDetailsPage />,
+            element: <LazyTaskDetailsPage />,
           },
 
           {
             path: "/projects/:projectId/board",
-            element: <KanbanPage />,
+            element: <LazyKanbanPage />,
           },
 
           // Profile
           {
             path: "/profile",
-            element: <ProfilePage />,
+            element: <LazyProfilePage />,
           },
 
           // =========================
@@ -135,7 +150,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: "/organizations/:organizationId/members",
-                element: <OrganizationDetailsPage />,
+                element: <LazyOrganizationDetailsPage />,
               },
             ],
           },
@@ -153,7 +168,7 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: "/projects/:projectId/manage",
-                element: <ProjectDetailsPage />,
+                element: <LazyProjectDetailsPage />,
               },
             ],
           },
@@ -168,7 +183,7 @@ export const router = createBrowserRouter([
 
   {
     path: "/unauthorized",
-    element: <UnauthorizedPage />,
+    element: <LazyUnauthorizedPage />,
   },
   {
     path: "*",

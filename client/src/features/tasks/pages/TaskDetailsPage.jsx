@@ -1,6 +1,6 @@
 // src/features/tasks/pages/TaskDetailsPage.jsx
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -65,15 +65,8 @@ const TaskDetailsPage = () => {
     refetch,
   } = useGetTaskQuery(
     { projectId, taskId, organizationId: currentOrganization?._id },
-    { skip: !projectId || !taskId, refetchOnMountOrArgChange: true }
+    { skip: !projectId || !taskId }
   );
-
-  // Force refetch on taskId change / navigation
-  React.useEffect(() => {
-    if (taskId) {
-      refetch();
-    }
-  }, [taskId, refetch]);
 
   // Real-time Socket.io listeners using bulletproof onSocketEvent
   React.useEffect(() => {
@@ -122,24 +115,24 @@ const TaskDetailsPage = () => {
   const projectMembers = projectMembersData?.data || [];
   const assignee = task.assigneeId || task.assignee || {};
 
-  // Permission evaluation: Org OWNER/ADMIN or Project MANAGER can manage tasks
-  const myOrgMember = members.find(
-    (m) => (m.userId?._id || m.userId) === currentUser?._id
-  );
-  const myProjectMember = projectMembers.find(
-    (m) => (m.userId?._id || m.userId) === currentUser?._id
-  );
+  // Permission evaluation memoized to prevent recalculation on every render
+  const canManageTask = useMemo(() => {
+    const myOrgMember = members.find(
+      (m) => (m.userId?._id || m.userId) === currentUser?._id
+    );
+    const myProjectMember = projectMembers.find(
+      (m) => (m.userId?._id || m.userId) === currentUser?._id
+    );
 
-  const isOrgAdminOrOwner =
-    myOrgMember?.role === "OWNER" ||
-    myOrgMember?.role === "ADMIN" ||
-    currentUser?.role === "OWNER" ||
-    currentUser?.role === "ADMIN";
+    const isOrgAdminOrOwner =
+      myOrgMember?.role === "OWNER" ||
+      myOrgMember?.role === "ADMIN" ||
+      currentUser?.role === "OWNER" ||
+      currentUser?.role === "ADMIN";
 
-  const isProjectManager = myProjectMember?.role === "MANAGER";
-
-  // If user is neither Org Admin/Owner nor Project Manager, they are a regular MEMBER
-  const canManageTask = Boolean(isOrgAdminOrOwner || isProjectManager);
+    const isProjectManager = myProjectMember?.role === "MANAGER";
+    return Boolean(isOrgAdminOrOwner || isProjectManager);
+  }, [members, projectMembers, currentUser]);
 
   const handleStatusChange = async (e) => {
     try {

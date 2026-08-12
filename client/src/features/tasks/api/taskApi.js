@@ -97,6 +97,20 @@ export const taskApi = createApi({
         method: "PATCH",
         body: { status, organizationId, projectId },
       }),
+      async onQueryStarted({ taskId, status, organizationId, projectId }, { dispatch, queryFulfilled }) {
+        const patchTaskDetail = dispatch(
+          taskApi.util.updateQueryData("getTask", { taskId, organizationId, projectId }, (draft) => {
+            if (draft?.data) {
+              draft.data.status = status;
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchTaskDetail.undo();
+        }
+      },
       invalidatesTags: (result, error, { taskId }) => [
         "Task",
         "KanbanTasks",
@@ -111,6 +125,20 @@ export const taskApi = createApi({
         method: "PATCH",
         body: { priority, organizationId, projectId },
       }),
+      async onQueryStarted({ taskId, priority, organizationId, projectId }, { dispatch, queryFulfilled }) {
+        const patchTaskDetail = dispatch(
+          taskApi.util.updateQueryData("getTask", { taskId, organizationId, projectId }, (draft) => {
+            if (draft?.data) {
+              draft.data.priority = priority;
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchTaskDetail.undo();
+        }
+      },
       invalidatesTags: (result, error, { taskId }) => [
         "Task",
         "KanbanTasks",
@@ -125,6 +153,20 @@ export const taskApi = createApi({
         method: "PATCH",
         body: { assigneeId, organizationId, projectId },
       }),
+      async onQueryStarted({ taskId, assigneeId, organizationId, projectId }, { dispatch, queryFulfilled }) {
+        const patchTaskDetail = dispatch(
+          taskApi.util.updateQueryData("getTask", { taskId, organizationId, projectId }, (draft) => {
+            if (draft?.data) {
+              draft.data.assigneeId = assigneeId;
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchTaskDetail.undo();
+        }
+      },
       invalidatesTags: (result, error, { taskId }) => [
         "Task",
         "KanbanTasks",

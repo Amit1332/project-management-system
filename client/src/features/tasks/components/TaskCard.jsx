@@ -270,4 +270,4 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
   );
 };
 
-export default TaskCard;
+export default React.memo(TaskCard);
