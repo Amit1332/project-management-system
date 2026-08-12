@@ -1,6 +1,7 @@
 // client/src/features/notifications/components/NotificationDropdown.jsx
 
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   IconButton,
   Badge,
@@ -26,21 +27,29 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
 } from "../api/notificationApi";
+import { useGetMyOrganizationsQuery } from "../../organizations/api/organizationApi";
+import { setCurrentOrganization } from "../../auth/authSlice";
 import { useNavigate } from "react-router-dom";
 import { getSocket, onSocketEvent } from "../../../services/socket";
 import { formatDateTime } from "../../../utils/formatDate";
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { currentOrganization } = useSelector((state) => state.auth);
+
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
   const { data: countData, refetch: refetchCount } = useGetUnreadCountQuery();
   const { data: listData, isLoading, refetch: refetchList } = useGetNotificationsQuery({ limit: 15 });
+  const { data: orgsData } = useGetMyOrganizationsQuery();
 
   const [markAsRead] = useMarkAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
+
+  const orgs = orgsData?.data || [];
 
   const unreadCount =
     typeof countData?.data === "number"
@@ -96,9 +105,29 @@ const NotificationDropdown = () => {
     }
     handleClose();
 
+    // Determine target organization ID from notification object
+    const targetOrgId =
+      item.organizationId?._id ||
+      (typeof item.organizationId === "string" ? item.organizationId : null) ||
+      item.projectId?.organizationId ||
+      item.taskId?.organizationId;
+
+    // Automatically switch active organization workspace if different from current selection
+    if (targetOrgId && targetOrgId !== currentOrganization?._id) {
+      const matchingOrgItem = orgs.find((o) => {
+        const id = o.organization?._id || o.organization || o._id;
+        return id === targetOrgId;
+      });
+
+      if (matchingOrgItem) {
+        const targetOrgObj = matchingOrgItem.organization || matchingOrgItem;
+        dispatch(setCurrentOrganization(targetOrgObj));
+      }
+    }
+
     const tId = item.taskId?._id || (typeof item.taskId === "string" ? item.taskId : null);
     const pId = item.projectId?._id || (typeof item.projectId === "string" ? item.projectId : null);
-    const oId = item.organizationId?._id || (typeof item.organizationId === "string" ? item.organizationId : null);
+    const oId = targetOrgId;
 
     if (tId) {
       if (pId) {

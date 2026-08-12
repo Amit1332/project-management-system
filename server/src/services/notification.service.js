@@ -32,6 +32,7 @@ const createNotification = async ({
   });
 
   const populated = await Notification.findById(notification._id)
+    .populate("organizationId", "_id name description")
     .populate("actorId", "_id name email avatar")
     .populate("projectId", "_id name")
     .populate("taskId", "_id title status")
@@ -97,6 +98,7 @@ const getNotifications = async ({
 
   const [notifications, total] = await Promise.all([
     Notification.find(filter)
+      .populate("organizationId", "_id name description")
       .populate("actorId", "_id name email avatar")
       .populate("projectId", "_id name")
       .populate("taskId", "_id title status")
