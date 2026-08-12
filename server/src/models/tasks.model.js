@@ -66,6 +66,11 @@ const taskSchema = new mongoose.Schema(
       default: false,
     },
 
+    dueSoonNotified: {
+      type: Boolean,
+      default: false,
+    },
+
     archivedAt: {
       type: Date,
       default: null,

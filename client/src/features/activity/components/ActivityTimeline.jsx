@@ -7,20 +7,22 @@ import {
   Paper,
   Typography,
   Avatar,
-  Chip,
   Divider,
 } from "@mui/material";
-import { Activity, Clock, User, ArrowRight } from "lucide-react";
+import { Activity, ArrowRight } from "lucide-react";
 
 import {
   useGetProjectActivityQuery,
   useGetTaskActivityQuery,
 } from "../api/activityApi";
+import StatusChip from "../../../components/common/StatusChip";
+import PriorityChip from "../../../components/common/PriorityChip";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
 import EmptyState from "../../../components/common/EmptyState";
 import { formatError } from "../../../utils/formatError";
-import { formatRelativeDate, formatDateTime } from "../../../utils/formatDate";
+import { formatRelativeDate } from "../../../utils/formatDate";
+import { getSocket, joinRoom } from "../../../services/socket";
 
 const actionLabels = {
   PROJECT_CREATED: "created this project",
@@ -30,19 +32,17 @@ const actionLabels = {
   TASK_UPDATED: "updated a task",
   TASK_STATUS_CHANGED: "changed task status",
   TASK_PRIORITY_CHANGED: "changed task priority",
+  TASK_ASSIGNED: "assigned a task",
   TASK_ASSIGNEE_CHANGED: "reassigned a task",
   TASK_ARCHIVED: "archived a task",
-  MEMBER_ADDED: "added a member",
-  MEMBER_REMOVED: "removed a member",
-  COMMENT_ADDED: "commented on a task",
+  MEMBER_ADDED: "added a project member",
+  MEMBER_REMOVED: "removed a project member",
+  COMMENT_ADDED: "added a comment",
 };
-
-import { getSocket } from "../../../services/socket";
 
 const ActivityTimeline = ({ projectId, taskId }) => {
   const { currentOrganization } = useSelector((state) => state.auth);
 
-  // If taskId is provided, fetch task activity, otherwise fetch project activity
   const projectActivityQuery = useGetProjectActivityQuery(
     { projectId, organizationId: currentOrganization?._id },
     { skip: !projectId || Boolean(taskId) }
@@ -56,21 +56,26 @@ const ActivityTimeline = ({ projectId, taskId }) => {
   const activeQuery = taskId ? taskActivityQuery : projectActivityQuery;
   const { data, isLoading, isError, error, refetch } = activeQuery;
 
-  // Listen to real-time activity log events
   React.useEffect(() => {
+    if (projectId) {
+      joinRoom("project", projectId);
+    }
+
     const socket = getSocket();
     if (socket) {
       const handleNewActivity = () => {
         refetch();
       };
+
       socket.on("activity:logged", handleNewActivity);
       return () => {
         socket.off("activity:logged", handleNewActivity);
       };
     }
-  }, [refetch]);
+  }, [projectId, refetch]);
 
-  const activities = data?.data?.logs || data?.data || [];
+  const rawLogs = data?.data?.logs || data?.data || [];
+  const activities = Array.isArray(rawLogs) ? rawLogs : [];
 
   const getInitials = (name) => {
     if (!name) return "U";
@@ -86,20 +91,36 @@ const ActivityTimeline = ({ projectId, taskId }) => {
     const meta = activity.metadata || {};
     if (meta.oldStatus && meta.newStatus) {
       return (
-        <Box display="inline-flex" alignItems="center" gap={0.8} ml={1}>
-          <Chip label={meta.oldStatus} size="small" sx={{ height: 18, fontSize: "0.68rem" }} />
-          <ArrowRight size={12} />
-          <Chip label={meta.newStatus} size="small" color="primary" sx={{ height: 18, fontSize: "0.68rem" }} />
-        </Box>
+        <div style={{ display: "inline-flex", flexDirection: "row", alignItems: "center", gap: "6px" }}>
+          <StatusChip label={meta.oldStatus} />
+          <ArrowRight size={12} color="#64748B" />
+          <StatusChip label={meta.newStatus} />
+        </div>
+      );
+    }
+    if (meta.newStatus) {
+      return (
+        <div style={{ display: "inline-flex", flexDirection: "row", alignItems: "center", gap: "6px" }}>
+          <span style={{ color: "#64748B", fontSize: "0.875rem", fontWeight: 500 }}>to</span>
+          <StatusChip label={meta.newStatus} />
+        </div>
       );
     }
     if (meta.oldPriority && meta.newPriority) {
       return (
-        <Box display="inline-flex" alignItems="center" gap={0.8} ml={1}>
-          <Chip label={meta.oldPriority} size="small" sx={{ height: 18, fontSize: "0.68rem" }} />
-          <ArrowRight size={12} />
-          <Chip label={meta.newPriority} size="small" color="warning" sx={{ height: 18, fontSize: "0.68rem" }} />
-        </Box>
+        <div style={{ display: "inline-flex", flexDirection: "row", alignItems: "center", gap: "6px" }}>
+          <PriorityChip priority={meta.oldPriority} />
+          <ArrowRight size={12} color="#64748B" />
+          <PriorityChip priority={meta.newPriority} />
+        </div>
+      );
+    }
+    if (meta.newPriority) {
+      return (
+        <div style={{ display: "inline-flex", flexDirection: "row", alignItems: "center", gap: "6px" }}>
+          <span style={{ color: "#64748B", fontSize: "0.875rem", fontWeight: 500 }}>to</span>
+          <PriorityChip priority={meta.newPriority} />
+        </div>
       );
     }
     return null;
@@ -115,12 +136,12 @@ const ActivityTimeline = ({ projectId, taskId }) => {
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" gap={1} mb={3}>
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
         <Activity size={20} color="#4F46E5" />
-        <Typography variant="h6" fontWeight={700} color="text.primary">
+        <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
           Activity History
         </Typography>
-      </Box>
+      </div>
 
       {activities.length === 0 ? (
         <EmptyState
@@ -139,47 +160,70 @@ const ActivityTimeline = ({ projectId, taskId }) => {
             bgcolor: "background.paper",
           }}
         >
-          <Box display="flex" flexDirection="column" gap={2.5}>
+          <Box display="flex" flexDirection="column">
             {activities.map((item, idx) => {
               const user = item.userId || {};
               const actionText = actionLabels[item.action] || item.action?.toLowerCase().replace(/_/g, " ");
 
               return (
                 <React.Fragment key={item._id || idx}>
-                  {idx > 0 && <Divider />}
+                  {idx > 0 && <Divider sx={{ my: 1.5 }} />}
 
-                  <Box display="flex" alignItems="flex-start" gap={2}>
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: "primary.main",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {getInitials(user.name)}
-                    </Avatar>
+                  {/* Strict Horizontal Activity Row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      width: "100%",
+                      padding: "4px 0",
+                    }}
+                  >
+                    {/* Left Side: Avatar + User Name + Action Phrase + Status/Priority Chips */}
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", flex: 1, minWidth: 0, flexWrap: "wrap" }}>
+                      <Avatar
+                        src={user.avatar}
+                        sx={{
+                          width: 34,
+                          height: 34,
+                          bgcolor: "#4F46E5",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          borderRadius: "8px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {getInitials(user.name)}
+                      </Avatar>
 
-                    <Box flex={1}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-                        <Typography variant="body2" color="text.primary">
-                          <strong>{user.name || "User"}</strong> {actionText}
-                          {renderMetadataDetails(item)}
-                        </Typography>
+                      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
+                        <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.875rem" }}>
+                          {user.name || "User"}
+                        </span>
 
-                        <Typography variant="caption" color="text.secondary">
-                          {formatRelativeDate(item.createdAt)}
-                        </Typography>
-                      </Box>
+                        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+                          {actionText}
+                        </span>
 
-                      {item.taskId?.title && !taskId && (
-                        <Typography variant="caption" color="text.secondary" display="block" mt={0.3}>
-                          Task: <em>{item.taskId.title}</em>
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
+                        {renderMetadataDetails(item)}
+
+                        {(item.taskId?.title || item.metadata?.title) && !taskId && (
+                          <span style={{ color: "#64748B", fontSize: "0.8rem", fontStyle: "italic", marginLeft: "4px" }}>
+                            ("{item.taskId?.title || item.metadata?.title}")
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Side: Relative Timestamp */}
+                    <div style={{ flexShrink: 0, textAlign: "right" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>
+                        {formatRelativeDate(item.createdAt)}
+                      </span>
+                    </div>
+                  </div>
                 </React.Fragment>
               );
             })}

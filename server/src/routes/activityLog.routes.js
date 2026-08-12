@@ -21,12 +21,4 @@ router.get(
   getProjectActivity,
 );
 
-router.get(
-  "/:projectId/activity-logs",
-  authenticate,
-  requireTenant,
-  requireProjectRole("MANAGER", "MEMBER"),
-  getProjectActivity,
-);
-
 module.exports = router;

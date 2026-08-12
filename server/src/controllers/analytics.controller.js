@@ -1,22 +1,31 @@
+const mongoose = require("mongoose");
 const Projects = require("../models/projects.models");
 const Tasks = require("../models/tasks.model");
 
 const getDashboardAnalytics = async (req, res) => {
   try {
-    const { organizationId, projectId } = req.query;
+    const orgId = req.query.organizationId || req.headers["x-organization-id"] || req.organizationId;
+    const { projectId } = req.query;
 
-    if (!organizationId) {
+    if (!orgId) {
       return res.status(400).json({
         success: false,
         message: "organizationId query parameter is required.",
       });
     }
 
-    const projectFilter = { organizationId };
-    const taskFilter = { organizationId, archived: false };
+    const validOrgId = mongoose.Types.ObjectId.isValid(orgId)
+      ? new mongoose.Types.ObjectId(orgId)
+      : orgId;
 
-    if (projectId) {
-      taskFilter.projectId = projectId;
+    const projectFilter = { organizationId: validOrgId };
+    const taskFilter = {
+      organizationId: validOrgId,
+      archived: { $ne: true },
+    };
+
+    if (projectId && mongoose.Types.ObjectId.isValid(projectId)) {
+      taskFilter.projectId = new mongoose.Types.ObjectId(projectId);
     }
 
     // 1. Projects metrics

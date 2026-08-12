@@ -124,6 +124,7 @@ const updateTaskPriority = catchAsync(async (req, res) => {
     projectId,
     taskId,
     priority: req.body.priority,
+    userId: req.user._id,
   });
 
   return res.status(200).json({
@@ -142,6 +143,7 @@ const updateTaskAssignee = catchAsync(async (req, res) => {
     projectId,
     taskId,
     assigneeId: req.body.assigneeId,
+    userId: req.user._id,
   });
 
   return res.status(200).json({

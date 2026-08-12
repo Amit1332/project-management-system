@@ -7,15 +7,12 @@ const { createLog } = require("./activityLog.service");
 const { createNotification } = require("./notification.service");
 const { emitToTask, emitToProject } = require("../socket");
 
-const verifyTask = async ({ organizationId, projectId, taskId }) => {
-  const query = {
+const verifyTask = async ({ organizationId, taskId }) => {
+  const task = await Task.findOne({
     _id: taskId,
     organizationId,
     archived: { $ne: true },
-  };
-  if (projectId) query.projectId = projectId;
-
-  const task = await Task.findOne(query);
+  });
 
   if (!task) {
     const error = new Error("Task not found");
@@ -35,7 +32,6 @@ const createComment = async ({
 }) => {
   const task = await verifyTask({
     organizationId,
-    projectId,
     taskId,
   });
 
@@ -45,13 +41,19 @@ const createComment = async ({
     organizationId,
     projectId: activeProjectId,
     taskId,
+    authorId: userId,
     userId,
     content,
   });
 
   const populatedComment = await Comment.findById(comment._id)
+    .populate("authorId", "_id name email avatar")
     .populate("userId", "_id name email avatar")
     .lean();
+
+  if (populatedComment) {
+    populatedComment.userId = populatedComment.userId || populatedComment.authorId;
+  }
 
   // Socket emissions for real-time comments
   emitToTask(taskId, "comment:created", populatedComment);
@@ -66,48 +68,79 @@ const createComment = async ({
       projectId: activeProjectId,
       taskId,
       userId,
-      action: "USER_ADDED_COMMENT",
+      action: "COMMENT_ADDED",
       entityType: "COMMENT",
       entityId: comment._id,
-      metadata: { contentSummary: content.substring(0, 100) },
+      metadata: { contentSummary: content.substring(0, 100), title: task.title },
     });
   } catch (err) {
     console.error("Error creating activity log for comment:", err);
   }
 
-  // Check for @mentions in comment text
+  // Check for notifications and @mentions
   try {
-    const mentions = content.match(/@([a-zA-Z0-9._-]+)/g);
-    if (mentions && mentions.length > 0) {
-      for (const mention of mentions) {
-        const username = mention.replace("@", "").toLowerCase();
+    const notifiedUserIds = new Set();
+    const currentUserIdStr = userId.toString();
+
+    // Add commenter to notifiedUserIds so commenter NEVER receives self-notification
+    notifiedUserIds.add(currentUserIdStr);
+
+    // 2. Mentions
+    const mentionTokens = content.match(/@[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|@[a-zA-Z0-9._-]+/g);
+    if (mentionTokens && mentionTokens.length > 0) {
+      const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      for (const mention of mentionTokens) {
+        const rawTerm = mention.replace(/^@/, "").trim();
+        if (!rawTerm) continue;
+
+        const safeTerm = escapeRegex(rawTerm);
         const mentionedUser = await User.findOne({
           $or: [
-            { name: new RegExp(`^${username}$`, "i") },
-            { email: new RegExp(`^${username}`, "i") },
+            { email: rawTerm.toLowerCase() },
+            { name: new RegExp(`^${safeTerm}$`, "i") },
+            { email: new RegExp(`^${safeTerm}`, "i") },
           ],
         });
-        if (mentionedUser && mentionedUser._id.toString() !== userId.toString()) {
-          await createNotification({
-            organizationId,
-            recipientId: mentionedUser._id,
-            actorId: userId,
-            type: "USER_MENTIONED",
-            title: "You were mentioned in a comment",
-            message: `User mentioned you in a comment on task "${task.title}"`,
-            projectId: activeProjectId,
-            taskId,
-            commentId: comment._id,
-          });
+
+        if (mentionedUser) {
+          const mId = mentionedUser._id.toString();
+          if (!notifiedUserIds.has(mId)) {
+            notifiedUserIds.add(mId);
+            await createNotification({
+              organizationId,
+              recipientId: mentionedUser._id,
+              actorId: userId,
+              type: "USER_MENTIONED",
+              title: "You were mentioned in a comment",
+              message: `User mentioned you in a comment on task "${task.title}"`,
+              projectId: activeProjectId,
+              taskId,
+              commentId: comment._id,
+            });
+          }
         }
       }
     }
 
-    // Notify task assignee if not the author
-    if (task.assigneeId && task.assigneeId.toString() !== userId.toString()) {
+    // 3. Task Assignee & Creator
+    const assigneeIdStr = task.assigneeId?._id
+      ? task.assigneeId._id.toString()
+      : task.assigneeId
+      ? task.assigneeId.toString()
+      : null;
+
+    const creatorIdStr = task.createdBy?._id
+      ? task.createdBy._id.toString()
+      : task.createdBy
+      ? task.createdBy.toString()
+      : null;
+
+    if (assigneeIdStr && !notifiedUserIds.has(assigneeIdStr)) {
+      notifiedUserIds.add(assigneeIdStr);
       await createNotification({
         organizationId,
-        recipientId: task.assigneeId,
+        recipientId: assigneeIdStr,
         actorId: userId,
         type: "COMMENT_ADDED",
         title: "New comment on your task",
@@ -116,6 +149,43 @@ const createComment = async ({
         taskId,
         commentId: comment._id,
       });
+    }
+
+    if (creatorIdStr && !notifiedUserIds.has(creatorIdStr)) {
+      notifiedUserIds.add(creatorIdStr);
+      await createNotification({
+        organizationId,
+        recipientId: creatorIdStr,
+        actorId: userId,
+        type: "COMMENT_ADDED",
+        title: "New comment on a task you created",
+        message: `New comment added to task "${task.title}"`,
+        projectId: activeProjectId,
+        taskId,
+        commentId: comment._id,
+      });
+    }
+
+    // 4. All other Project Members
+    if (activeProjectId) {
+      const projectMembers = await ProjectMember.find({ projectId: activeProjectId }).select("userId");
+      for (const pMember of projectMembers) {
+        const pmIdStr = pMember.userId.toString();
+        if (!notifiedUserIds.has(pmIdStr)) {
+          notifiedUserIds.add(pmIdStr);
+          await createNotification({
+            organizationId,
+            recipientId: pMember.userId,
+            actorId: userId,
+            type: "COMMENT_ADDED",
+            title: "New comment on project task",
+            message: `New comment added to task "${task.title}"`,
+            projectId: activeProjectId,
+            taskId,
+            commentId: comment._id,
+          });
+        }
+      }
     }
   } catch (err) {
     console.error("Error processing notifications for comment:", err);
@@ -137,13 +207,20 @@ const getComments = async ({ organizationId, projectId, taskId }) => {
   };
   if (projectId) query.projectId = projectId;
 
-  return Comment.find(query)
+  // Sort by createdAt: -1 to show the latest comment at the top
+  const comments = await Comment.find(query)
+    .populate("authorId", "_id name email avatar")
     .populate("userId", "_id name email avatar")
     .sort({
-      createdAt: 1,
-      _id: 1,
+      createdAt: -1,
+      _id: -1,
     })
     .lean();
+
+  return comments.map((c) => ({
+    ...c,
+    userId: c.userId || c.authorId,
+  }));
 };
 
 const updateComment = async ({
@@ -170,9 +247,7 @@ const updateComment = async ({
 
   if (!comment) {
     const error = new Error("Comment not found or you are not the owner");
-
     error.statusCode = 404;
-
     throw error;
   }
 
@@ -209,9 +284,7 @@ const deleteComment = async ({
 
   if (!comment) {
     const error = new Error("Comment not found or you are not the owner");
-
     error.statusCode = 404;
-
     throw error;
   }
 

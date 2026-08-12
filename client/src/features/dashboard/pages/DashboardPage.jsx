@@ -27,6 +27,7 @@ import {
   ArrowRight,
   PieChart as PieIcon,
   BarChart3,
+  ListTodo,
 } from "lucide-react";
 import {
   PieChart,
@@ -91,6 +92,8 @@ const DashboardPage = () => {
     tasksByPriority: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
     myTasks: [],
   };
+
+  const hasTasks = (stats.totalTasks || 0) > 0;
 
   // Recharts Data formatting
   const statusChartData = [
@@ -171,7 +174,7 @@ const DashboardPage = () => {
         />
       </div>
 
-      {/* 4 Key Metrics Cards Grid - Explicit 36px Bottom Margin */}
+      {/* 4 Key Metrics Cards Grid */}
       <div style={{ marginBottom: "36px" }}>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -293,7 +296,7 @@ const DashboardPage = () => {
         </Grid>
       </div>
 
-      {/* Analytics Charts Grid - Explicit 36px Bottom Margin */}
+      {/* Analytics Charts Grid */}
       <div style={{ marginBottom: "36px" }}>
         <Grid container spacing={3}>
           {/* Pie Chart: Tasks by Status */}
@@ -305,40 +308,52 @@ const DashboardPage = () => {
                 borderRadius: 3.5,
                 border: "1px solid #E2E8F0",
                 bgcolor: "#FFFFFF",
-                height: 400,
+                height: 380,
                 display: "flex",
                 flexDirection: "column",
                 boxShadow: "0 2px 6px rgba(15, 23, 42, 0.04)",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                 <PieIcon size={20} color="#4F46E5" />
                 <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
                   Tasks Breakdown by Status
                 </Typography>
               </div>
 
-              <Box flex={1} width="100%" height="100%">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={100}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {statusChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value} Tasks`, "Count"]} />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
+              <div style={{ width: "100%", height: "290px", position: "relative" }}>
+                {!hasTasks ? (
+                  <Box textAlign="center" my="auto" pt={6}>
+                    <ListTodo size={40} color="#94A3B8" style={{ marginBottom: 12 }} />
+                    <Typography variant="body2" color="#0F172A" fontWeight={700}>
+                      No tasks in this workspace
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      Create tasks inside your project to view live status distributions.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <ResponsiveContainer width="100%" height={290}>
+                    <PieChart>
+                      <Pie
+                        data={statusChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {statusChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value} Tasks`, "Count"]} />
+                      <Legend verticalAlign="bottom" height={36} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </Paper>
           </Grid>
 
@@ -351,33 +366,45 @@ const DashboardPage = () => {
                 borderRadius: 3.5,
                 border: "1px solid #E2E8F0",
                 bgcolor: "#FFFFFF",
-                height: 400,
+                height: 380,
                 display: "flex",
                 flexDirection: "column",
                 boxShadow: "0 2px 6px rgba(15, 23, 42, 0.04)",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                 <BarChart3 size={20} color="#0284C7" />
                 <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
                   Tasks Breakdown by Priority
                 </Typography>
               </div>
 
-              <Box flex={1} width="100%" height="100%">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={priorityChartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                    <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
-                    <YAxis allowDecimals={false} stroke="#64748B" fontSize={12} />
-                    <Tooltip formatter={(value) => [`${value} Tasks`, "Count"]} />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                      {priorityChartData.map((entry, index) => (
-                        <Cell key={`bar-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
+              <div style={{ width: "100%", height: "290px", position: "relative" }}>
+                {!hasTasks ? (
+                  <Box textAlign="center" my="auto" pt={6}>
+                    <BarChart3 size={40} color="#94A3B8" style={{ marginBottom: 12 }} />
+                    <Typography variant="body2" color="#0F172A" fontWeight={700}>
+                      No priority analytics yet
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      Create tasks inside your project to view priority metrics.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <ResponsiveContainer width="100%" height={290}>
+                    <BarChart data={priorityChartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                      <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
+                      <YAxis allowDecimals={false} stroke="#64748B" fontSize={12} />
+                      <Tooltip formatter={(value) => [`${value} Tasks`, "Count"]} />
+                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                        {priorityChartData.map((entry, index) => (
+                          <Cell key={`bar-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </Paper>
           </Grid>
         </Grid>

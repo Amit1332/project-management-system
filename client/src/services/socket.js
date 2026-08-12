@@ -4,6 +4,28 @@ import { io } from "socket.io-client";
 
 let socket = null;
 
+const activeRooms = new Set();
+
+export const joinRoom = (roomType, id) => {
+  if (!id) return;
+  const roomKey = `${roomType}:${id}`;
+  activeRooms.add(roomKey);
+
+  if (socket && socket.connected) {
+    socket.emit(`join:${roomType}`, id);
+  }
+};
+
+export const leaveRoom = (roomType, id) => {
+  if (!id) return;
+  const roomKey = `${roomType}:${id}`;
+  activeRooms.delete(roomKey);
+
+  if (socket && socket.connected) {
+    socket.emit(`leave:${roomType}`, id);
+  }
+};
+
 export const initSocket = (token) => {
   if (socket) {
     socket.disconnect();
@@ -21,6 +43,10 @@ export const initSocket = (token) => {
 
   socket.on("connect", () => {
     console.log("Realtime socket connected:", socket.id);
+    activeRooms.forEach((roomKey) => {
+      const [type, id] = roomKey.split(":");
+      socket.emit(`join:${type}`, id);
+    });
   });
 
   socket.on("connect_error", (err) => {
@@ -39,14 +65,27 @@ export const disconnectSocket = () => {
   }
 };
 
-export const joinRoom = (roomType, id) => {
-  if (socket && id) {
-    socket.emit(`join:${roomType}`, id);
-  }
-};
+export const onSocketEvent = (event, callback) => {
+  if (!event || typeof callback !== "function") return () => {};
 
-export const leaveRoom = (roomType, id) => {
-  if (socket && id) {
-    socket.emit(`leave:${roomType}`, id);
+  let intervalId = null;
+
+  if (socket) {
+    socket.on(event, callback);
+  } else {
+    intervalId = setInterval(() => {
+      if (socket) {
+        socket.on(event, callback);
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }, 200);
   }
+
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+    if (socket) {
+      socket.off(event, callback);
+    }
+  };
 };

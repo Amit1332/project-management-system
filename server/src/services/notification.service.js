@@ -52,29 +52,25 @@ const checkDueSoonNotifications = async (userId) => {
 
     const dueSoonTasks = await Task.find({
       assigneeId: userId,
-      status: { $ne: "DONE" },
+      status: { $nin: ["DONE", "COMPLETED"] },
       archived: { $ne: true },
+      dueSoonNotified: { $ne: true },
       dueDate: { $gte: now, $lte: next24Hours },
-    }).lean();
+    });
 
     for (const task of dueSoonTasks) {
-      const existingNotification = await Notification.findOne({
-        recipientId: userId,
-        taskId: task._id,
-        type: "TASK_DUE_SOON",
-      });
+      task.dueSoonNotified = true;
+      await task.save();
 
-      if (!existingNotification) {
-        await createNotification({
-          organizationId: task.organizationId,
-          recipientId: userId,
-          type: "TASK_DUE_SOON",
-          title: "Task Due Soon",
-          message: `Task "${task.title}" is due within 24 hours`,
-          projectId: task.projectId,
-          taskId: task._id,
-        });
-      }
+      await createNotification({
+        organizationId: task.organizationId,
+        recipientId: userId,
+        type: "TASK_DUE_SOON",
+        title: "Task Due Soon",
+        message: `Task "${task.title}" is due within 24 hours`,
+        projectId: task.projectId,
+        taskId: task._id,
+      });
     }
   } catch (err) {
     console.error("Error checking due soon notifications:", err);

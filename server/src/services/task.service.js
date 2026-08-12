@@ -96,7 +96,7 @@ const createTask = async ({
       projectId,
       taskId: task._id,
       userId,
-      action: "USER_CREATED_TASK",
+      action: "TASK_CREATED",
       entityType: "TASK",
       entityId: task._id,
       metadata: { title },
@@ -351,7 +351,7 @@ const updateTaskStatus = async ({
       projectId: activeProjectId,
       taskId,
       userId: userId || task.createdBy,
-      action: "USER_CHANGED_TASK_STATUS",
+      action: "TASK_STATUS_CHANGED",
       entityType: "TASK",
       entityId: taskId,
       metadata: { newStatus: status, title: task.title },
@@ -381,6 +381,7 @@ const updateTaskPriority = async ({
   projectId,
   taskId,
   priority,
+  userId,
 }) => {
   const query = {
     _id: taskId,
@@ -408,6 +409,27 @@ const updateTaskPriority = async ({
     throw error;
   }
 
+  const activeProjectId = projectId || task.projectId;
+
+  if (activeProjectId) {
+    emitToProject(activeProjectId, "task:status_changed", task);
+  }
+
+  try {
+    await createLog({
+      organizationId,
+      projectId: activeProjectId,
+      taskId,
+      userId: userId || task.createdBy,
+      action: "TASK_PRIORITY_CHANGED",
+      entityType: "TASK",
+      entityId: taskId,
+      metadata: { newPriority: priority, title: task.title },
+    });
+  } catch (err) {
+    console.error("Error creating activity log for task priority update:", err);
+  }
+
   return task;
 };
 
@@ -416,6 +438,7 @@ const updateTaskAssignee = async ({
   projectId,
   taskId,
   assigneeId,
+  userId,
 }) => {
   const query = {
     _id: taskId,
@@ -445,9 +468,43 @@ const updateTaskAssignee = async ({
 
   await task.save();
 
-  return Task.findById(task._id)
+  const updatedTask = await Task.findById(task._id)
     .populate("assigneeId", "_id name email avatar")
     .lean();
+
+  if (activeProjectId) {
+    emitToProject(activeProjectId, "task:status_changed", updatedTask);
+  }
+
+  try {
+    await createLog({
+      organizationId,
+      projectId: activeProjectId,
+      taskId,
+      userId: userId || task.createdBy,
+      action: "TASK_ASSIGNED",
+      entityType: "TASK",
+      entityId: taskId,
+      metadata: { assigneeId, title: task.title },
+    });
+
+    if (assigneeId && userId && assigneeId.toString() !== userId.toString()) {
+      await createNotification({
+        organizationId,
+        recipientId: assigneeId,
+        actorId: userId,
+        type: "TASK_ASSIGNED",
+        title: "New task assigned to you",
+        message: `You were assigned task "${task.title}"`,
+        projectId: activeProjectId,
+        taskId,
+      });
+    }
+  } catch (err) {
+    console.error("Error creating activity log for task assignee update:", err);
+  }
+
+  return updatedTask;
 };
 
 const getKanbanTasks = async ({ organizationId, projectId }) => {

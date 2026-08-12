@@ -44,6 +44,8 @@ import ConfirmDialog from "../../../components/common/ConfirmDialog";
 import { formatError } from "../../../utils/formatError";
 import { formatDate } from "../../../utils/formatDate";
 
+import { joinRoom, getSocket } from "../../../services/socket";
+
 const ProjectDetailsPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -69,10 +71,34 @@ const ProjectDetailsPage = () => {
   const {
     data: tasksData,
     isLoading: isTasksLoading,
+    refetch: refetchTasks,
   } = useGetTasksQuery(
     { projectId, organizationId: currentOrganization?._id, search },
     { skip: !projectId }
   );
+
+  // Join project socket room & refetch on real-time task/activity events
+  React.useEffect(() => {
+    if (projectId) {
+      joinRoom("project", projectId);
+    }
+    const socket = getSocket();
+    if (socket) {
+      const handleRealtimeUpdate = () => {
+        refetchProject();
+        refetchTasks();
+      };
+      socket.on("task:created", handleRealtimeUpdate);
+      socket.on("task:status_changed", handleRealtimeUpdate);
+      socket.on("activity:logged", handleRealtimeUpdate);
+
+      return () => {
+        socket.off("task:created", handleRealtimeUpdate);
+        socket.off("task:status_changed", handleRealtimeUpdate);
+        socket.off("activity:logged", handleRealtimeUpdate);
+      };
+    }
+  }, [projectId, refetchProject, refetchTasks]);
 
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
   const [archiveTask] = useArchiveTaskMutation();

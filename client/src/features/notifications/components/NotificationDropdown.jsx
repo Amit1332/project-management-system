@@ -16,6 +16,7 @@ import {
   Avatar,
   CircularProgress,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { Bell, CheckCheck, MessageSquare, CheckSquare, Sparkles, Trash2 } from "lucide-react";
 import {
@@ -25,7 +26,7 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
 } from "../api/notificationApi";
-import { getSocket } from "../../../services/socket";
+import { getSocket, onSocketEvent } from "../../../services/socket";
 import { formatDate } from "../../../utils/formatDate";
 
 const NotificationDropdown = () => {
@@ -33,10 +34,7 @@ const NotificationDropdown = () => {
   const open = Boolean(anchorEl);
 
   const { data: countData, refetch: refetchCount } = useGetUnreadCountQuery();
-  const { data: listData, isLoading, refetch: refetchList } = useGetNotificationsQuery(
-    { limit: 15 },
-    { skip: !open }
-  );
+  const { data: listData, isLoading, refetch: refetchList } = useGetNotificationsQuery({ limit: 15 });
 
   const [markAsRead] = useMarkAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
@@ -49,24 +47,18 @@ const NotificationDropdown = () => {
       ? countData.data.count
       : 0;
 
-  const notifications = listData?.data?.notifications || [];
+  const rawNotifications = listData?.data?.notifications || listData?.data;
+  const notifications = Array.isArray(rawNotifications) ? rawNotifications : [];
 
   useEffect(() => {
-    const socket = getSocket();
-    if (socket) {
-      const handleNewNotification = () => {
-        refetchCount();
-        if (open) {
-          refetchList();
-        }
-      };
-      socket.on("notification:received", handleNewNotification);
-
-      return () => {
-        socket.off("notification:received", handleNewNotification);
-      };
-    }
-  }, [open, refetchCount, refetchList]);
+    const unsubscribe = onSocketEvent("notification:received", () => {
+      refetchCount();
+      refetchList();
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [refetchCount, refetchList]);
 
   const handleClick = (e) => {
     setAnchorEl(e.currentTarget);
@@ -151,30 +143,35 @@ const NotificationDropdown = () => {
           },
         }}
       >
-        {/* Header Modal Bar */}
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
-          pb={2}
-          mb={2}
-          borderBottom="1px solid"
-          borderColor="divider"
+        {/* Header Modal Bar - Strict Horizontal Row (Notifications + Count Chip on Left, Mark All Read on Far Right) */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            width: "100%",
+            paddingBottom: "12px",
+            marginBottom: "12px",
+            borderBottom: "1px solid #E2E8F0",
+          }}
         >
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
             <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
               Notifications
             </Typography>
             {unreadCount > 0 && (
-              <Badge
-                badgeContent={unreadCount}
-                color="error"
+              <Chip
+                label={unreadCount}
+                size="small"
                 sx={{
-                  "& .MuiBadge-badge": {
-                    position: "relative",
-                    transform: "none",
-                    fontWeight: 800,
-                  },
+                  bgcolor: "#DC2626",
+                  color: "#FFFFFF",
+                  fontWeight: 800,
+                  fontSize: "0.72rem",
+                  height: 20,
+                  borderRadius: 1.5,
                 }}
               />
             )}
@@ -185,12 +182,12 @@ const NotificationDropdown = () => {
               size="small"
               startIcon={<CheckCheck size={14} />}
               onClick={handleMarkAllRead}
-              sx={{ textTransform: "none", fontSize: "0.75rem", fontWeight: 700, px: 1 }}
+              sx={{ textTransform: "none", fontSize: "0.75rem", fontWeight: 700, px: 1, whiteSpace: "nowrap", flexShrink: 0 }}
             >
               Mark all read
             </Button>
           )}
-        </Box>
+        </div>
 
         {/* Content Body */}
         {isLoading ? (
@@ -227,8 +224,10 @@ const NotificationDropdown = () => {
                 <ListItem
                   onClick={() => handleMarkRead(item._id)}
                   sx={{
-                    px: 3,
-                    py: 1.8,
+                    px: 2,
+                    py: 1.5,
+                    borderRadius: 2.5,
+                    mb: 1,
                     bgcolor: item.isRead ? "transparent" : "#F0F4FF",
                     cursor: "pointer",
                     transition: "background-color 0.2s",
@@ -307,7 +306,6 @@ const NotificationDropdown = () => {
                     }
                   />
                 </ListItem>
-                <Divider component="li" />
               </React.Fragment>
             ))}
           </List>

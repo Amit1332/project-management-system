@@ -7,6 +7,9 @@ const createCommentSchema = Joi.object({
     "string.max": "Comment cannot exceed 3000 characters",
     "any.required": "Comment is required",
   }),
+  organizationId: Joi.string().optional(),
+  projectId: Joi.string().optional(),
+  taskId: Joi.string().optional(),
 });
 
 const updateCommentSchema = Joi.object({
