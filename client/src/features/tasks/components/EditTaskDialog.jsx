@@ -20,7 +20,7 @@ import { useUpdateTaskMutation } from "../api/taskApi";
 import { useGetMembersQuery } from "../../organizations/api/organizationApi";
 import { formatError } from "../../../utils/formatError";
 
-const EditTaskDialog = ({ open, onClose, projectId, task }) => {
+const EditTaskDialog = ({ open, onClose, projectId, task, canManageTask = true }) => {
   const { currentOrganization } = useSelector((state) => state.auth);
   const [updateTask, { isLoading }] = useUpdateTaskMutation();
 
@@ -106,6 +106,12 @@ const EditTaskDialog = ({ open, onClose, projectId, task }) => {
       </DialogTitle>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogContent dividers sx={{ p: 3, py: 3.5 }}>
+          {!canManageTask && (
+            <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+              You have Member permissions. Priority and Assignee modifications require Manager or Admin permissions.
+            </Alert>
+          )}
+
           {errorMessage && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
               {errorMessage}
@@ -156,6 +162,7 @@ const EditTaskDialog = ({ open, onClose, projectId, task }) => {
                   select
                   label="Priority"
                   name="priority"
+                  disabled={!canManageTask}
                   value={formData.priority}
                   onChange={handleChange}
                   fullWidth
@@ -174,6 +181,7 @@ const EditTaskDialog = ({ open, onClose, projectId, task }) => {
                   select
                   label="Assignee"
                   name="assigneeId"
+                  disabled={!canManageTask}
                   value={formData.assigneeId}
                   onChange={handleChange}
                   fullWidth

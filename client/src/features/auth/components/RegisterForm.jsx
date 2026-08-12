@@ -72,31 +72,34 @@ const RegisterForm = () => {
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      {/* Mobile Logo Brand */}
-      <Box
-        display={{ xs: "inline-flex", md: "none" }}
-        alignItems="center"
-        gap={1.5}
-        mb={3}
-        sx={{ width: "fit-content" }}
-      >
-        <Box sx={{ bgcolor: "primary.main", color: "white", p: 1, borderRadius: 2, display: "inline-flex" }}>
-          <Rocket size={20} />
-        </Box>
-        <Typography variant="h6" fontWeight={800} color="text.primary">
+      {/* Brand Icon Header */}
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+        <div
+          style={{
+            width: "44px",
+            height: "44px",
+            borderRadius: "12px",
+            backgroundColor: "#4F46E5",
+            color: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 6px 16px rgba(79, 70, 229, 0.3)",
+          }}
+        >
+          <Rocket size={22} color="#FFFFFF" />
+        </div>
+        <Typography variant="h6" fontWeight={800} color="#0F172A">
           TaskCraft
         </Typography>
-      </Box>
+      </div>
 
-      {/* Title */}
-      <Box mb={3.5}>
-        <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em" gutterBottom>
+      {/* Main Form Title - Generous 32px Bottom Margin */}
+      <div style={{ marginBottom: "32px" }}>
+        <Typography variant="h4" fontWeight={800} color="#0F172A" letterSpacing="-0.02em">
           Create an Account
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Join TaskCraft to collaborate on workspace projects & tasks
-        </Typography>
-      </Box>
+      </div>
 
       {errorMessage && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -104,91 +107,91 @@ const RegisterForm = () => {
         </Alert>
       )}
 
-      <Box display="flex" flexDirection="column" gap={2.5}>
-        <Box>
-          <Typography variant="caption" fontWeight={700} color="text.primary" mb={0.8} display="block">
-            Full Name
-          </Typography>
-          <TextField
-            name="name"
-            type="text"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            fullWidth
-            autoFocus
-            placeholder="Amitesh Patel"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <User size={18} color="#64748B" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-        </Box>
+      {/* Form Fields & Spacing - Explicit 24px Vertical Gap */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <TextField
+          name="name"
+          type="text"
+          value={formData.name}
+          onChange={handleChange}
+          required
+          fullWidth
+          autoFocus
+          placeholder="Full Name"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <User size={18} color="#64748B" />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2.5,
+            },
+          }}
+        />
 
-        <Box>
-          <Typography variant="caption" fontWeight={700} color="text.primary" mb={0.8} display="block">
-            Email Address
-          </Typography>
-          <TextField
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            fullWidth
-            placeholder="name@example.com"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Mail size={18} color="#64748B" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-        </Box>
+        <TextField
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          fullWidth
+          placeholder="name@example.com"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Mail size={18} color="#64748B" />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2.5,
+            },
+          }}
+        />
 
-        <Box>
-          <Typography variant="caption" fontWeight={700} color="text.primary" mb={0.8} display="block">
-            Password
-          </Typography>
-          <TextField
-            name="password"
-            type={showPassword ? "text" : "password"}
-            value={formData.password}
-            onChange={handleChange}
-            required
-            fullWidth
-            placeholder="Password@123"
-            helperText="At least 6 characters"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock size={18} color="#64748B" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      size="small"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-        </Box>
+        <TextField
+          name="password"
+          type={showPassword ? "text" : "password"}
+          value={formData.password}
+          onChange={handleChange}
+          required
+          fullWidth
+          placeholder="Password (min 6 characters)"
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Lock size={18} color="#64748B" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    size="small"
+                  >
+                    {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2.5,
+            },
+          }}
+        />
 
         <Button
           type="submit"
@@ -205,7 +208,6 @@ const RegisterForm = () => {
             )
           }
           sx={{
-            mt: 1,
             py: 1.4,
             borderRadius: 2.5,
             textTransform: "none",
@@ -216,9 +218,9 @@ const RegisterForm = () => {
         >
           {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
-      </Box>
+      </div>
 
-      <Box textAlign="center" mt={3.5}>
+      <Box textAlign="center" mt={4}>
         <Typography variant="body2" color="text.secondary">
           Already have an account?{" "}
           <Link

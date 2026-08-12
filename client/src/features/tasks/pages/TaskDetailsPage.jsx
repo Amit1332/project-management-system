@@ -17,6 +17,7 @@ import {
   TextField,
   Tabs,
   Tab,
+  Tooltip,
 } from "@mui/material";
 import {
   CheckSquare,
@@ -34,6 +35,7 @@ import {
   useUpdateTaskAssigneeMutation,
 } from "../api/taskApi";
 import { useGetMembersQuery } from "../../organizations/api/organizationApi";
+import { useGetProjectMembersQuery } from "../../projects/api/projectApi";
 import TaskCommentsSection from "../../comments/components/TaskCommentsSection";
 import ActivityTimeline from "../../activity/components/ActivityTimeline";
 import EditTaskDialog from "../components/EditTaskDialog";
@@ -43,11 +45,12 @@ import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
 import { formatError } from "../../../utils/formatError";
 
-import { joinRoom, leaveRoom, getSocket } from "../../../services/socket";
+import { joinRoom, leaveRoom, onSocketEvent } from "../../../services/socket";
 
 const TaskDetailsPage = () => {
   const { projectId, taskId } = useParams();
   const navigate = useNavigate();
+  const currentUser = useSelector((state) => state.auth.user);
   const { currentOrganization } = useSelector((state) => state.auth);
 
   const [activeTab, setActiveTab] = useState(0);
@@ -61,10 +64,17 @@ const TaskDetailsPage = () => {
     refetch,
   } = useGetTaskQuery(
     { projectId, taskId, organizationId: currentOrganization?._id },
-    { skip: !projectId || !taskId }
+    { skip: !projectId || !taskId, refetchOnMountOrArgChange: true }
   );
 
-  // Real-time Socket.io listeners
+  // Force refetch on taskId change / navigation
+  React.useEffect(() => {
+    if (taskId) {
+      refetch();
+    }
+  }, [taskId, refetch]);
+
+  // Real-time Socket.io listeners using bulletproof onSocketEvent
   React.useEffect(() => {
     if (taskId) {
       joinRoom("task", taskId);
@@ -73,26 +83,34 @@ const TaskDetailsPage = () => {
       joinRoom("project", projectId);
     }
 
-    const socket = getSocket();
-    if (socket) {
-      const handleSocketUpdate = () => {
-        refetch();
-      };
-      socket.on("comment:created", handleSocketUpdate);
-      socket.on("task:status_changed", handleSocketUpdate);
+    const handleSocketUpdate = () => {
+      refetch();
+    };
 
-      return () => {
-        socket.off("comment:created", handleSocketUpdate);
-        socket.off("task:status_changed", handleSocketUpdate);
-        if (taskId) leaveRoom("task", taskId);
-        if (projectId) leaveRoom("project", projectId);
-      };
-    }
+    const unsubs = [
+      onSocketEvent("comment:created", handleSocketUpdate),
+      onSocketEvent("task:updated", handleSocketUpdate),
+      onSocketEvent("task:status_changed", handleSocketUpdate),
+      onSocketEvent("task:priority_changed", handleSocketUpdate),
+      onSocketEvent("task:assigned", handleSocketUpdate),
+      onSocketEvent("activity:created", handleSocketUpdate),
+    ];
+
+    return () => {
+      unsubs.forEach((unsub) => unsub && unsub());
+      if (taskId) leaveRoom("task", taskId);
+      if (projectId) leaveRoom("project", projectId);
+    };
   }, [taskId, projectId, refetch]);
 
   const { data: membersData } = useGetMembersQuery(currentOrganization?._id, {
     skip: !currentOrganization?._id,
   });
+
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId, organizationId: currentOrganization?._id },
+    { skip: !projectId }
+  );
 
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
   const [updateTaskPriority] = useUpdateTaskPriorityMutation();
@@ -100,7 +118,27 @@ const TaskDetailsPage = () => {
 
   const task = taskData?.data || {};
   const members = membersData?.data || [];
+  const projectMembers = projectMembersData?.data || [];
   const assignee = task.assigneeId || task.assignee || {};
+
+  // Permission evaluation: Org OWNER/ADMIN or Project MANAGER can manage tasks
+  const myOrgMember = members.find(
+    (m) => (m.userId?._id || m.userId) === currentUser?._id
+  );
+  const myProjectMember = projectMembers.find(
+    (m) => (m.userId?._id || m.userId) === currentUser?._id
+  );
+
+  const isOrgAdminOrOwner =
+    myOrgMember?.role === "OWNER" ||
+    myOrgMember?.role === "ADMIN" ||
+    currentUser?.role === "OWNER" ||
+    currentUser?.role === "ADMIN";
+
+  const isProjectManager = myProjectMember?.role === "MANAGER";
+
+  // If user is neither Org Admin/Owner nor Project Manager, they are a regular MEMBER
+  const canManageTask = Boolean(isOrgAdminOrOwner || isProjectManager);
 
   const handleStatusChange = async (e) => {
     try {
@@ -110,6 +148,7 @@ const TaskDetailsPage = () => {
         status: e.target.value,
         organizationId: currentOrganization?._id,
       }).unwrap();
+      refetch();
     } catch (err) {}
   };
 
@@ -121,6 +160,7 @@ const TaskDetailsPage = () => {
         priority: e.target.value,
         organizationId: currentOrganization?._id,
       }).unwrap();
+      refetch();
     } catch (err) {}
   };
 
@@ -132,6 +172,7 @@ const TaskDetailsPage = () => {
         assigneeId: e.target.value || null,
         organizationId: currentOrganization?._id,
       }).unwrap();
+      refetch();
     } catch (err) {}
   };
 
@@ -274,23 +315,28 @@ const TaskDetailsPage = () => {
               Kanban Board
             </Button>
 
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Edit3 size={18} />}
-              onClick={() => setIsEditOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: 2.5,
-                px: 2.5,
-                py: 1.2,
-                boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Edit Task
-            </Button>
+            <Tooltip title={!canManageTask ? "Only Managers & Admins can edit task details" : ""}>
+              <span>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={!canManageTask}
+                  startIcon={<Edit3 size={18} />}
+                  onClick={() => setIsEditOpen(true)}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderRadius: 2.5,
+                    px: 2.5,
+                    py: 1.2,
+                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Edit Task
+                </Button>
+              </span>
+            </Tooltip>
           </div>
         </div>
 
@@ -315,40 +361,46 @@ const TaskDetailsPage = () => {
           </Grid>
 
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField
-              select
-              size="medium"
-              fullWidth
-              label="Priority"
-              value={task.priority || "MEDIUM"}
-              onChange={handlePriorityChange}
-            >
-              <MenuItem value="LOW">LOW</MenuItem>
-              <MenuItem value="MEDIUM">MEDIUM</MenuItem>
-              <MenuItem value="HIGH">HIGH</MenuItem>
-              <MenuItem value="CRITICAL">CRITICAL</MenuItem>
-            </TextField>
+            <Tooltip title={!canManageTask ? "Only Managers & Admins can change task priority" : ""}>
+              <TextField
+                select
+                size="medium"
+                fullWidth
+                disabled={!canManageTask}
+                label="Priority"
+                value={task.priority || "MEDIUM"}
+                onChange={handlePriorityChange}
+              >
+                <MenuItem value="LOW">LOW</MenuItem>
+                <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+                <MenuItem value="HIGH">HIGH</MenuItem>
+                <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+              </TextField>
+            </Tooltip>
           </Grid>
 
           <Grid size={{ xs: 12, sm: 4 }}>
-            <TextField
-              select
-              size="medium"
-              fullWidth
-              label="Assignee"
-              value={assignee._id || ""}
-              onChange={handleAssigneeChange}
-            >
-              <MenuItem value="">Unassigned</MenuItem>
-              {members.map((m) => {
-                const u = m.userId || {};
-                return (
-                  <MenuItem key={u._id} value={u._id}>
-                    {u.name}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
+            <Tooltip title={!canManageTask ? "Only Managers & Admins can assign tasks" : ""}>
+              <TextField
+                select
+                size="medium"
+                fullWidth
+                disabled={!canManageTask}
+                label="Assignee"
+                value={assignee._id || ""}
+                onChange={handleAssigneeChange}
+              >
+                <MenuItem value="">Unassigned</MenuItem>
+                {members.map((m) => {
+                  const u = m.userId || {};
+                  return (
+                    <MenuItem key={u._id} value={u._id}>
+                      {u.name}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+            </Tooltip>
           </Grid>
         </Grid>
       </Paper>
@@ -376,6 +428,7 @@ const TaskDetailsPage = () => {
         onClose={() => setIsEditOpen(false)}
         projectId={projectId}
         task={task}
+        canManageTask={canManageTask}
       />
     </Box>
   );

@@ -3,19 +3,24 @@
 import React from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 
-const LoadingSpinner = ({ label = "Loading...", size = 40, py = 4 }) => {
+const LoadingSpinner = ({ label = "Loading...", size = 44, py = 6, minHeight = "50vh" }) => {
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      py={py}
-      gap={2}
+      sx={{
+        width: "100%",
+        minHeight: minHeight,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        py: py,
+        gap: 2,
+      }}
     >
       <CircularProgress size={size} thickness={4} color="primary" />
       {label && (
-        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+        <Typography variant="body2" color="text.secondary" fontWeight={600}>
           {label}
         </Typography>
       )}

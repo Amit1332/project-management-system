@@ -22,7 +22,7 @@ import ErrorState from "../../../components/common/ErrorState";
 import EmptyState from "../../../components/common/EmptyState";
 import { formatError } from "../../../utils/formatError";
 import { formatRelativeDate } from "../../../utils/formatDate";
-import { getSocket, joinRoom } from "../../../services/socket";
+import { joinRoom, onSocketEvent } from "../../../services/socket";
 
 const actionLabels = {
   PROJECT_CREATED: "created this project",
@@ -45,12 +45,12 @@ const ActivityTimeline = ({ projectId, taskId }) => {
 
   const projectActivityQuery = useGetProjectActivityQuery(
     { projectId, organizationId: currentOrganization?._id },
-    { skip: !projectId || Boolean(taskId) }
+    { skip: !projectId || Boolean(taskId), refetchOnMountOrArgChange: true }
   );
 
   const taskActivityQuery = useGetTaskActivityQuery(
     { projectId, taskId, organizationId: currentOrganization?._id },
-    { skip: !projectId || !taskId }
+    { skip: !projectId || !taskId, refetchOnMountOrArgChange: true }
   );
 
   const activeQuery = taskId ? taskActivityQuery : projectActivityQuery;
@@ -61,17 +61,18 @@ const ActivityTimeline = ({ projectId, taskId }) => {
       joinRoom("project", projectId);
     }
 
-    const socket = getSocket();
-    if (socket) {
-      const handleNewActivity = () => {
-        refetch();
-      };
+    const handleNewActivity = () => {
+      refetch();
+    };
 
-      socket.on("activity:logged", handleNewActivity);
-      return () => {
-        socket.off("activity:logged", handleNewActivity);
-      };
-    }
+    const unsubs = [
+      onSocketEvent("activity:created", handleNewActivity),
+      onSocketEvent("activity:logged", handleNewActivity),
+    ];
+
+    return () => {
+      unsubs.forEach((unsub) => unsub && unsub());
+    };
   }, [projectId, refetch]);
 
   const rawLogs = data?.data?.logs || data?.data || [];

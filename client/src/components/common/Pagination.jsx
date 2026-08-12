@@ -9,6 +9,7 @@ const Pagination = ({
   onChange,
   totalItems,
   itemsPerPage = 10,
+  mt = 4,
 }) => {
   if (count <= 1 && !totalItems) return null;
 
@@ -17,12 +18,15 @@ const Pagination = ({
 
   return (
     <Box
-      display="flex"
-      flexDirection={{ xs: "column", sm: "row" }}
-      alignItems="center"
-      justifyContent="space-between"
-      pt={3}
-      gap={2}
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        alignItems: "center",
+        justifyContent: "space-between",
+        mt: mt,
+        pt: 2,
+        gap: 2,
+      }}
     >
       {totalItems !== undefined && (
         <Typography variant="body2" color="text.secondary">

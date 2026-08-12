@@ -26,10 +26,12 @@ import {
   useMarkAllAsReadMutation,
   useDeleteNotificationMutation,
 } from "../api/notificationApi";
+import { useNavigate } from "react-router-dom";
 import { getSocket, onSocketEvent } from "../../../services/socket";
 import { formatDate } from "../../../utils/formatDate";
 
 const NotificationDropdown = () => {
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -88,6 +90,29 @@ const NotificationDropdown = () => {
     } catch (e) {}
   };
 
+  const handleItemClick = (item) => {
+    if (!item.isRead) {
+      handleMarkRead(item._id);
+    }
+    handleClose();
+
+    const tId = item.taskId?._id || (typeof item.taskId === "string" ? item.taskId : null);
+    const pId = item.projectId?._id || (typeof item.projectId === "string" ? item.projectId : null);
+    const oId = item.organizationId?._id || (typeof item.organizationId === "string" ? item.organizationId : null);
+
+    if (tId) {
+      if (pId) {
+        navigate(`/projects/${pId}/tasks/${tId}`);
+      } else {
+        navigate(`/tasks/${tId}`);
+      }
+    } else if (pId) {
+      navigate(`/projects/${pId}`);
+    } else if (oId) {
+      navigate(`/organizations/${oId}`);
+    }
+  };
+
   const getIcon = (type) => {
     switch (type) {
       case "USER_MENTIONED":
@@ -95,6 +120,7 @@ const NotificationDropdown = () => {
         return <MessageSquare size={17} color="#4F46E5" />;
       case "TASK_ASSIGNED":
       case "TASK_STATUS_CHANGED":
+      case "TASK_DUE_SOON":
         return <CheckSquare size={17} color="#059669" />;
       default:
         return <Sparkles size={17} color="#D97706" />;
@@ -143,35 +169,30 @@ const NotificationDropdown = () => {
           },
         }}
       >
-        {/* Header Modal Bar - Strict Horizontal Row (Notifications + Count Chip on Left, Mark All Read on Far Right) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            width: "100%",
-            paddingBottom: "12px",
-            marginBottom: "12px",
-            borderBottom: "1px solid #E2E8F0",
-          }}
+        {/* Header Modal Bar */}
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          pb={2}
+          mb={2}
+          borderBottom="1px solid"
+          borderColor="divider"
         >
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px" }}>
             <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
               Notifications
             </Typography>
             {unreadCount > 0 && (
-              <Chip
-                label={unreadCount}
-                size="small"
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
                 sx={{
-                  bgcolor: "#DC2626",
-                  color: "#FFFFFF",
-                  fontWeight: 800,
-                  fontSize: "0.72rem",
-                  height: 20,
-                  borderRadius: 1.5,
+                  "& .MuiBadge-badge": {
+                    position: "relative",
+                    transform: "none",
+                    fontWeight: 800,
+                  },
                 }}
               />
             )}
@@ -182,12 +203,12 @@ const NotificationDropdown = () => {
               size="small"
               startIcon={<CheckCheck size={14} />}
               onClick={handleMarkAllRead}
-              sx={{ textTransform: "none", fontSize: "0.75rem", fontWeight: 700, px: 1, whiteSpace: "nowrap", flexShrink: 0 }}
+              sx={{ textTransform: "none", fontSize: "0.75rem", fontWeight: 700, px: 1 }}
             >
               Mark all read
             </Button>
           )}
-        </div>
+        </Box>
 
         {/* Content Body */}
         {isLoading ? (
@@ -222,7 +243,7 @@ const NotificationDropdown = () => {
             {notifications.map((item) => (
               <React.Fragment key={item._id}>
                 <ListItem
-                  onClick={() => handleMarkRead(item._id)}
+                  onClick={() => handleItemClick(item)}
                   sx={{
                     px: 2,
                     py: 1.5,
