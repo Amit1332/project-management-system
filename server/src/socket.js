@@ -6,8 +6,11 @@ let io;
 const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || "*",
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        return callback(null, true);
+      },
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
     },
   });

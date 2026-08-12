@@ -14,9 +14,44 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan.errorHandler);
 }
 
-//middleware
-app.use(cors());
-app.options("{*path}", cors());
+// Production-ready CORS configuration supporting Vercel & local environments
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "https://project-management-system-three-chi.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (Postman, cURL, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // Allow explicitly defined origins or any Vercel deployment
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".vercel.app") ||
+      process.env.NODE_ENV !== "production"
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "x-organization-id",
+    "x-project-id",
+  ],
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json({ limit: "10kb" }));
 
 app.use(
@@ -24,25 +59,29 @@ app.use(
     dnsPrefetchControl: false,
     frameguard: false,
     ieNoOpen: false,
-  }),
+    crossOriginResourcePolicy: false,
+  })
 );
 
 if (process.env.NODE_ENV === "production") {
-  app.use("/api/v1/auth", authLimiter);
+  app.use("/api/auth", authLimiter);
 }
+
 app.use("/api", baseRoutes);
 
 app.use("/ping", (req, res) => {
-  return res.json({});
+  return res.json({ status: "ok", message: "Server is active" });
 });
 
-// send back a 404 error for any unknown api request
+// Send back a 404 error for any unknown api request
 app.use((req, res, next) => {
   next(new ApiError(HTTP_STATUS_CODES.NOT_FOUND, "Not found"));
 });
 
+// Convert error to ApiError if needed
 app.use(errorConverter);
 
-// handle error
+// Handle error
 app.use(errorHandler);
+
 module.exports = app;
