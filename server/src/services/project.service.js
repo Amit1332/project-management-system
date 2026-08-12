@@ -292,10 +292,10 @@ const addProjectMember = async ({
       organizationId,
       projectId,
       userId: addedBy,
-      action: "MEMBER_ADDED",
+      action: "PROJECT_MEMBER_ADDED",
       entityType: "PROJECT_MEMBER",
       entityId: member._id,
-      metadata: { addedUserId: user._id, role },
+      metadata: { addedUserId: user._id, targetUserName: user.name, role },
     });
   } catch (err) {
     console.error("Error creating notification/log for project member addition:", err);
@@ -340,7 +340,9 @@ const updateProjectMemberRole = async ({
   projectId,
   userId,
   role,
+  actorId,
 }) => {
+  const project = await Project.findOne({ _id: projectId, organizationId });
   const member = await ProjectMember.findOne({
     organizationId,
     projectId,
@@ -349,20 +351,51 @@ const updateProjectMemberRole = async ({
 
   if (!member) {
     const error = new Error("Project member not found");
-
     error.statusCode = 404;
-
     throw error;
   }
 
+  const oldRole = member.role;
   member.role = role;
-
   await member.save();
+
+  // Create Notification & Activity Log
+  try {
+    const { createNotification } = require("./notification.service");
+    const { createLog } = require("./activityLog.service");
+    const projectName = project?.name || "Project";
+    const targetUser = await User.findById(userId).select("name email").lean();
+
+    if (userId.toString() !== actorId?.toString()) {
+      await createNotification({
+        organizationId,
+        recipientId: userId,
+        actorId,
+        type: "PROJECT_MEMBER_ROLE_CHANGED",
+        title: "Project role updated",
+        message: `Your role in project "${projectName}" was updated to ${role}`,
+        projectId,
+      });
+    }
+
+    await createLog({
+      organizationId,
+      projectId,
+      userId: actorId || userId,
+      action: "PROJECT_MEMBER_ROLE_CHANGED",
+      entityType: "PROJECT_MEMBER",
+      entityId: member._id,
+      metadata: { targetUserId: userId, targetUserName: targetUser?.name || "Member", oldRole, newRole: role },
+    });
+  } catch (err) {
+    console.error("Error creating notification/log for project member role change:", err);
+  }
 
   return member;
 };
 
-const removeProjectMember = async ({ organizationId, projectId, userId }) => {
+const removeProjectMember = async ({ organizationId, projectId, userId, actorId }) => {
+  const project = await Project.findOne({ _id: projectId, organizationId });
   const member = await ProjectMember.findOne({
     organizationId,
     projectId,
@@ -371,15 +404,46 @@ const removeProjectMember = async ({ organizationId, projectId, userId }) => {
 
   if (!member) {
     const error = new Error("Project member not found");
-
     error.statusCode = 404;
-
     throw error;
   }
+
+  const targetUser = await User.findById(userId).select("name email").lean();
 
   await ProjectMember.deleteOne({
     _id: member._id,
   });
+
+  // Create Notification & Activity Log
+  try {
+    const { createNotification } = require("./notification.service");
+    const { createLog } = require("./activityLog.service");
+    const projectName = project?.name || "Project";
+
+    if (userId.toString() !== actorId?.toString()) {
+      await createNotification({
+        organizationId,
+        recipientId: userId,
+        actorId,
+        type: "PROJECT_MEMBER_REMOVED",
+        title: "Removed from project",
+        message: `You were removed from project "${projectName}"`,
+        projectId,
+      });
+    }
+
+    await createLog({
+      organizationId,
+      projectId,
+      userId: actorId || userId,
+      action: "PROJECT_MEMBER_REMOVED",
+      entityType: "PROJECT_MEMBER",
+      entityId: member._id,
+      metadata: { removedUserId: userId, targetUserName: targetUser?.name || "Member" },
+    });
+  } catch (err) {
+    console.error("Error creating notification/log for project member removal:", err);
+  }
 
   return {
     message: "Project member removed successfully",
@@ -395,5 +459,6 @@ module.exports = {
   addProjectMember,
   getProjectMembers,
   updateProjectMemberRole,
+  changeProjectMemberRole: updateProjectMemberRole,
   removeProjectMember,
 };

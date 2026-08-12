@@ -5,11 +5,11 @@ const { redisCache } = require("../config/redis");
 const createProject = catchAsync(async (req, res) => {
   const result = await projectService.createProject({
     ...req.body,
+
     organizationId: req.organizationId,
+
     userId: req.user._id,
   });
-
-  redisCache.delPattern(`projects:${req.organizationId}:*`);
 
   return res.status(201).json({
     success: true,
@@ -20,6 +20,7 @@ const createProject = catchAsync(async (req, res) => {
 
 const getProjects = catchAsync(async (req, res) => {
   const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+
   const limit = Math.min(
     Math.max(Number.parseInt(req.query.limit, 10) || 20, 1),
     100,
@@ -27,10 +28,15 @@ const getProjects = catchAsync(async (req, res) => {
 
   const result = await projectService.getProjects({
     organizationId: req.organizationId,
+
     page,
+
     limit,
+
     status: req.query.status,
+
     priority: req.query.priority,
+
     search: req.query.search,
   });
 
@@ -42,39 +48,26 @@ const getProjects = catchAsync(async (req, res) => {
 });
 
 const getProject = catchAsync(async (req, res) => {
-  const projectId = req.params.projectId;
-  const cacheKey = `project:${req.organizationId}:${projectId}`;
-
-  const cached = await redisCache.get(cacheKey);
-  if (cached) {
-    return res.status(200).json(cached);
-  }
-
   const result = await projectService.getProject({
     organizationId: req.organizationId,
-    projectId,
+
+    projectId: req.params.projectId,
   });
 
-  const responsePayload = {
+  return res.status(200).json({
     success: true,
     data: result,
-  };
-
-  redisCache.set(cacheKey, responsePayload, 300);
-
-  return res.status(200).json(responsePayload);
+  });
 });
 
 const updateProject = catchAsync(async (req, res) => {
-  const projectId = req.params.projectId;
   const result = await projectService.updateProject({
     organizationId: req.organizationId,
-    projectId,
+
+    projectId: req.params.projectId,
+
     ...req.body,
   });
-
-  redisCache.del(`project:${req.organizationId}:${projectId}`);
-  redisCache.delPattern(`projects:${req.organizationId}:*`);
 
   return res.status(200).json({
     success: true,
@@ -84,14 +77,11 @@ const updateProject = catchAsync(async (req, res) => {
 });
 
 const archiveProject = catchAsync(async (req, res) => {
-  const projectId = req.params.projectId;
   const result = await projectService.archiveProject({
     organizationId: req.organizationId,
-    projectId,
-  });
 
-  redisCache.del(`project:${req.organizationId}:${projectId}`);
-  redisCache.delPattern(`projects:${req.organizationId}:*`);
+    projectId: req.params.projectId,
+  });
 
   return res.status(200).json({
     success: true,
@@ -103,14 +93,15 @@ const archiveProject = catchAsync(async (req, res) => {
 const addProjectMember = catchAsync(async (req, res) => {
   const result = await projectService.addProjectMember({
     organizationId: req.organizationId,
+
     projectId: req.params.projectId,
+
     addedBy: req.user._id,
+
     ...req.body,
   });
 
-  redisCache.del(`project:${req.organizationId}:${req.params.projectId}`);
-
-  return res.status(200).json({
+  return res.status(201).json({
     success: true,
     message: "Project member added successfully",
     data: result,
@@ -118,10 +109,12 @@ const addProjectMember = catchAsync(async (req, res) => {
 });
 
 const removeProjectMember = catchAsync(async (req, res) => {
+  const targetUserId = req.params.userId || req.params.memberUserId;
   const result = await projectService.removeProjectMember({
     organizationId: req.organizationId,
     projectId: req.params.projectId,
-    memberUserId: req.params.memberUserId,
+    userId: targetUserId,
+    actorId: req.user._id,
   });
 
   redisCache.del(`project:${req.organizationId}:${req.params.projectId}`);
@@ -134,11 +127,13 @@ const removeProjectMember = catchAsync(async (req, res) => {
 });
 
 const changeProjectMemberRole = catchAsync(async (req, res) => {
-  const result = await projectService.changeProjectMemberRole({
+  const targetUserId = req.params.userId || req.params.memberUserId;
+  const result = await projectService.updateProjectMemberRole({
     organizationId: req.organizationId,
     projectId: req.params.projectId,
-    memberUserId: req.params.memberUserId,
+    userId: targetUserId,
     role: req.body.role,
+    actorId: req.user._id,
   });
 
   redisCache.del(`project:${req.organizationId}:${req.params.projectId}`);
@@ -153,6 +148,7 @@ const changeProjectMemberRole = catchAsync(async (req, res) => {
 const getProjectMembers = catchAsync(async (req, res) => {
   const result = await projectService.getProjectMembers({
     organizationId: req.organizationId,
+
     projectId: req.params.projectId,
   });
 
@@ -171,5 +167,6 @@ module.exports = {
   addProjectMember,
   removeProjectMember,
   changeProjectMemberRole,
+  updateProjectMemberRole: changeProjectMemberRole,
   getProjectMembers,
 };

@@ -36,6 +36,9 @@ const activityLogSchema = new mongoose.Schema(
         "PROJECT_MEMBER_ADDED",
         "PROJECT_MEMBER_REMOVED",
         "PROJECT_MEMBER_ROLE_CHANGED",
+        "MEMBER_ADDED",
+        "MEMBER_REMOVED",
+        "MEMBER_ROLE_CHANGED",
 
         "TASK_CREATED",
         "TASK_UPDATED",

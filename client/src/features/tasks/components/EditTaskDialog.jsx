@@ -18,17 +18,25 @@ import {
 import { Edit3 } from "lucide-react";
 import { useUpdateTaskMutation } from "../api/taskApi";
 import { useGetMembersQuery } from "../../organizations/api/organizationApi";
+import { useGetProjectMembersQuery } from "../../projects/api/projectApi";
 import { formatError } from "../../../utils/formatError";
 
 const EditTaskDialog = ({ open, onClose, projectId, task, canManageTask = true }) => {
   const { currentOrganization } = useSelector((state) => state.auth);
   const [updateTask, { isLoading }] = useUpdateTaskMutation();
 
-  const { data: membersData } = useGetMembersQuery(currentOrganization?._id, {
-    skip: !currentOrganization?._id,
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId, organizationId: currentOrganization?._id },
+    { skip: !projectId || !currentOrganization?._id }
+  );
+
+  const { data: orgMembersData } = useGetMembersQuery(currentOrganization?._id, {
+    skip: !!projectId || !currentOrganization?._id,
   });
 
-  const members = membersData?.data || [];
+  const members = projectId
+    ? (projectMembersData?.data || []).map((m) => (m.userId ? m : { userId: m }))
+    : orgMembersData?.data || [];
 
   const [formData, setFormData] = useState({
     title: "",

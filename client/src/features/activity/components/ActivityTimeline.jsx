@@ -20,6 +20,7 @@ import PriorityChip from "../../../components/common/PriorityChip";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
 import EmptyState from "../../../components/common/EmptyState";
+import { useNavigate } from "react-router-dom";
 import { formatError } from "../../../utils/formatError";
 import { formatRelativeDate } from "../../../utils/formatDate";
 import { joinRoom, onSocketEvent } from "../../../services/socket";
@@ -36,7 +37,11 @@ const actionLabels = {
   TASK_ASSIGNEE_CHANGED: "reassigned a task",
   TASK_ARCHIVED: "archived a task",
   MEMBER_ADDED: "added a project member",
+  PROJECT_MEMBER_ADDED: "added a project member",
   MEMBER_REMOVED: "removed a project member",
+  PROJECT_MEMBER_REMOVED: "removed a project member",
+  MEMBER_ROLE_CHANGED: "changed member role",
+  PROJECT_MEMBER_ROLE_CHANGED: "changed member role",
   COMMENT_ADDED: "added a comment",
 };
 
@@ -127,6 +132,108 @@ const ActivityTimeline = ({ projectId, taskId }) => {
     return null;
   };
 
+  const navigate = useNavigate();
+
+  const renderTaskLink = (item) => {
+    const targetTaskId = item.taskId?._id || item.taskId || (item.entityType === "TASK" ? item.entityId : null);
+    const taskTitle = item.taskId?.title || item.metadata?.title;
+    if (!targetTaskId) return null;
+
+    const shortId = `#${targetTaskId.toString().slice(-6)}`;
+
+    const handleClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const pId = item.projectId?._id || item.projectId || projectId;
+      if (pId) {
+        navigate(`/projects/${pId}/tasks/${targetTaskId}`);
+      } else {
+        navigate(`/tasks/${targetTaskId}`);
+      }
+    };
+
+    return (
+      <span
+        onClick={handleClick}
+        style={{
+          color: "#2563EB",
+          fontWeight: 700,
+          cursor: "pointer",
+          textDecoration: "none",
+          fontSize: "0.82rem",
+          backgroundColor: "#EFF6FF",
+          padding: "2px 7px",
+          borderRadius: "6px",
+          border: "1px solid #BFDBFE",
+          margin: "0 2px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+        }}
+        title={`View task: ${taskTitle || targetTaskId}`}
+      >
+        {shortId} {taskTitle ? `(${taskTitle})` : ""}
+      </span>
+    );
+  };
+
+  const renderActionPhrase = (item) => {
+    const meta = item.metadata || {};
+    const targetName = meta.targetUserName || meta.name || "";
+    const assigneeName = meta.assigneeName || meta.assignee?.name || "";
+    const taskLink = renderTaskLink(item);
+
+    if (item.action === "TASK_CREATED") {
+      return (
+        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+          created task {taskLink}
+          {assigneeName ? ` and assigned to ${assigneeName}` : ""}
+        </span>
+      );
+    }
+
+    if (item.action === "TASK_ASSIGNED" || item.action === "TASK_ASSIGNEE_CHANGED") {
+      return (
+        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+          assigned task {taskLink}
+          {assigneeName ? ` to ${assigneeName}` : ""}
+        </span>
+      );
+    }
+
+    if (item.action === "PROJECT_MEMBER_ADDED" || item.action === "MEMBER_ADDED") {
+      return (
+        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+          {targetName ? `added project member ${targetName}` : "added a project member"}
+        </span>
+      );
+    }
+
+    if (item.action === "PROJECT_MEMBER_REMOVED" || item.action === "MEMBER_REMOVED") {
+      return (
+        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+          {targetName ? `removed project member ${targetName}` : "removed a project member"}
+        </span>
+      );
+    }
+
+    if (item.action === "PROJECT_MEMBER_ROLE_CHANGED" || item.action === "MEMBER_ROLE_CHANGED") {
+      const newRole = meta.newRole || meta.role || "";
+      return (
+        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+          {targetName ? `changed ${targetName}'s role to ${newRole}` : `changed member role to ${newRole}`}
+        </span>
+      );
+    }
+
+    const defaultText = actionLabels[item.action] || item.action?.toLowerCase().replace(/_/g, " ");
+    return (
+      <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
+        {defaultText} {taskLink}
+      </span>
+    );
+  };
+
   if (isLoading) {
     return <LoadingSpinner label="Loading activity logs..." py={4} />;
   }
@@ -164,7 +271,6 @@ const ActivityTimeline = ({ projectId, taskId }) => {
           <Box display="flex" flexDirection="column">
             {activities.map((item, idx) => {
               const user = item.userId || {};
-              const actionText = actionLabels[item.action] || item.action?.toLowerCase().replace(/_/g, " ");
 
               return (
                 <React.Fragment key={item._id || idx}>
@@ -204,17 +310,9 @@ const ActivityTimeline = ({ projectId, taskId }) => {
                           {user.name || "User"}
                         </span>
 
-                        <span style={{ color: "#475569", fontSize: "0.875rem", fontWeight: 500 }}>
-                          {actionText}
-                        </span>
+                        {renderActionPhrase(item)}
 
                         {renderMetadataDetails(item)}
-
-                        {(item.taskId?.title || item.metadata?.title) && !taskId && (
-                          <span style={{ color: "#64748B", fontSize: "0.8rem", fontStyle: "italic", marginLeft: "4px" }}>
-                            ("{item.taskId?.title || item.metadata?.title}")
-                          </span>
-                        )}
                       </div>
                     </div>
 

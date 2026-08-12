@@ -91,6 +91,12 @@ const createTask = async ({
 
   // Create Activity Log & Notifications
   try {
+    let assigneeName = null;
+    if (assigneeId) {
+      const assigneeUser = await User.findById(assigneeId).select("name").lean();
+      assigneeName = assigneeUser?.name || null;
+    }
+
     await createLog({
       organizationId,
       projectId,
@@ -99,7 +105,7 @@ const createTask = async ({
       action: "TASK_CREATED",
       entityType: "TASK",
       entityId: task._id,
-      metadata: { title },
+      metadata: { title, assigneeId, assigneeName },
     });
 
     if (assigneeId && assigneeId.toString() !== userId.toString()) {
@@ -479,6 +485,8 @@ const updateTaskAssignee = async ({
   }
 
   try {
+    const assigneeName = updatedTask.assigneeId?.name || null;
+
     await createLog({
       organizationId,
       projectId: activeProjectId,
@@ -487,7 +495,7 @@ const updateTaskAssignee = async ({
       action: "TASK_ASSIGNED",
       entityType: "TASK",
       entityId: taskId,
-      metadata: { assigneeId, title: task.title },
+      metadata: { assigneeId, assigneeName, title: task.title },
     });
 
     if (assigneeId && userId && assigneeId.toString() !== userId.toString()) {

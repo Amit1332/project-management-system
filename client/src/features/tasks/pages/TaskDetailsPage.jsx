@@ -405,8 +405,8 @@ const TaskDetailsPage = () => {
               }}
             >
               <MenuItem value="">Unassigned</MenuItem>
-              {members.map((m) => {
-                const u = m.userId || {};
+              {(projectId && projectMembers.length > 0 ? projectMembers : members).map((m) => {
+                const u = m.userId || m;
                 return (
                   <MenuItem key={u._id} value={u._id}>
                     {u.name}

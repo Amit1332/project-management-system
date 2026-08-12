@@ -48,7 +48,8 @@ const addProjectMemberSchema = Joi.object({
 
 const updateProjectMemberRoleSchema = Joi.object({
   role: Joi.string().valid("MANAGER", "MEMBER").required(),
-});
+  organizationId: Joi.string().optional(),
+}).unknown(true);
 
 module.exports = {
   createProjectSchema,

@@ -18,17 +18,25 @@ import {
 import { Plus } from "lucide-react";
 import { useCreateTaskMutation } from "../api/taskApi";
 import { useGetMembersQuery } from "../../organizations/api/organizationApi";
+import { useGetProjectMembersQuery } from "../../projects/api/projectApi";
 import { formatError } from "../../../utils/formatError";
 
 const CreateTaskDialog = ({ open, onClose, projectId, defaultStatus = "TODO" }) => {
   const { currentOrganization } = useSelector((state) => state.auth);
   const [createTask, { isLoading }] = useCreateTaskMutation();
 
-  const { data: membersData } = useGetMembersQuery(currentOrganization?._id, {
-    skip: !currentOrganization?._id,
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId, organizationId: currentOrganization?._id },
+    { skip: !projectId || !currentOrganization?._id }
+  );
+
+  const { data: orgMembersData } = useGetMembersQuery(currentOrganization?._id, {
+    skip: !!projectId || !currentOrganization?._id,
   });
 
-  const members = membersData?.data || [];
+  const members = projectId
+    ? (projectMembersData?.data || []).map((m) => (m.userId ? m : { userId: m }))
+    : orgMembersData?.data || [];
 
   const [formData, setFormData] = useState({
     title: "",
