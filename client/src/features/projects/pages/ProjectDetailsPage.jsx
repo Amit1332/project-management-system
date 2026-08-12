@@ -14,6 +14,8 @@ import {
   Link,
   Tabs,
   Tab,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import {
   FolderKanban,
@@ -177,90 +179,100 @@ const ProjectDetailsPage = () => {
       </Box>
 
       {/* Hero Header */}
+      {/* Hero Header Card */}
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, md: 4 },
+          p: { xs: 2.5, sm: 3, md: 3.5 },
           mb: 4,
           borderRadius: 3.5,
           border: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
+          position: "relative",
         }}
       >
-        <div
-          style={{
+        {/* Top-Right Absolute Positioned Action Buttons (Mobile & Desktop) */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: { xs: 16, md: 20 },
+            right: { xs: 16, md: 24 },
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-            width: "100%",
+            gap: 1,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "16px", flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                backgroundColor: "#4F46E5",
-                color: "#FFFFFF",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-              }}
-            >
-              <FolderKanban size={22} color="#FFFFFF" />
-            </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-                  {project.name}
-                </Typography>
-                <StatusChip label={project.status || "ACTIVE"} />
-                <PriorityChip priority={project.priority || "MEDIUM"} />
-              </div>
-
-              <Typography variant="body2" color="text.secondary" mt={0.3} noWrap>
-                {project.description || "No project description provided."}
-              </Typography>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<Columns3 size={18} />}
+          <Tooltip title="Kanban Board">
+            <IconButton
               onClick={() => navigate(`/projects/${projectId}/board`)}
               sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                px: 2.5,
-                py: 1.2,
-                borderRadius: 2.5,
-                boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-                whiteSpace: "nowrap",
+                border: "1px solid",
+                borderColor: "#C7D2FE",
+                bgcolor: "#EEF2FF",
+                color: "#4F46E5",
+                "&:hover": { bgcolor: "#E0E7FF" },
+                borderRadius: 2,
+                p: 0.8,
+                mr: 1,
               }}
             >
-              Kanban Board
-            </Button>
+              <Columns3 size={18} color="#4F46E5" />
+            </IconButton>
+          </Tooltip>
 
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<Edit3 size={18} />}
+          <Tooltip title="Edit Project">
+            <IconButton
               onClick={() => setIsEditOpen(true)}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, whiteSpace: "nowrap" }}
+              sx={{
+                bgcolor: "#4F46E5",
+                color: "#FFFFFF",
+                "&:hover": { bgcolor: "#4338CA" },
+                borderRadius: 2,
+                p: 0.8,
+                mr: 1,
+              }}
             >
-              Edit Project
-            </Button>
-          </div>
-        </div>
+              <Edit3 size={18} color="#FFFFFF" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Left Side Main Content: Icon & Title in Row */}
+        <Box display="flex" alignItems="center" gap={2} mb={1} pr={{ md: "250px" }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 3,
+              bgcolor: "#4F46E5",
+              color: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            <FolderKanban size={22} color="#FFFFFF" />
+          </Box>
+
+          <Box display="flex" alignItems="center" gap={1.2} flexWrap="wrap">
+            <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
+              {project.name}
+            </Typography>
+            <StatusChip label={project.status || "ACTIVE"} />
+            <PriorityChip priority={project.priority || "MEDIUM"} />
+          </Box>
+        </Box>
+
+        {/* Project Description */}
+        {project.description && (
+          <Typography variant="body2" color="text.secondary" mt={0.5} pr={{ md: "250px" }}>
+            {project.description}
+          </Typography>
+        )}
 
         <Divider sx={{ my: 3 }} />
 

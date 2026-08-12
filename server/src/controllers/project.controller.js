@@ -35,6 +35,8 @@ const getProjects = catchAsync(async (req, res) => {
     status: req.query.status,
 
     priority: req.query.priority,
+
+    search: req.query.search,
   });
 
   return res.status(200).json({

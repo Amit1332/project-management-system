@@ -11,6 +11,7 @@ import {
   MenuItem,
   Chip,
   Divider,
+  IconButton,
 } from "@mui/material";
 import {
   LayoutDashboard,
@@ -22,6 +23,7 @@ import {
   ChevronsUpDown,
   Plus,
   LogOut,
+  X,
 } from "lucide-react";
 import { useGetMyOrganizationsQuery } from "../../features/organizations/api/organizationApi";
 import { setCurrentOrganization, logout } from "../../features/auth/authSlice";
@@ -87,12 +89,12 @@ const Sidebar = ({ onClose }) => {
     <div
       style={{
         width: "260px",
-        height: "100vh",
+        height: "100%",
         display: "flex",
         flexDirection: "column",
         backgroundColor: "#FFFFFF",
         borderRight: "1px solid #E2E8F0",
-        position: "fixed",
+        position: onClose ? "relative" : "fixed",
         top: 0,
         left: 0,
         zIndex: 1100,
@@ -106,38 +108,46 @@ const Sidebar = ({ onClose }) => {
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          gap: "12px",
+          justifyContent: "space-between",
           padding: "20px 20px 16px 20px",
         }}
       >
-        <div
-          style={{
-            width: "38px",
-            height: "38px",
-            borderRadius: "10px",
-            background: "linear-gradient(135deg, #4F46E5 0%, #3730A3 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
-            flexShrink: 0,
-          }}
-        >
-          <Rocket size={20} color="#FFFFFF" />
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #4F46E5 0%, #3730A3 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            <Rocket size={20} color="#FFFFFF" />
+          </div>
+
+          <span
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: 800,
+              color: "#0F172A",
+              fontFamily: '"Plus Jakarta Sans", sans-serif',
+              lineHeight: 1,
+              whiteSpace: "nowrap",
+            }}
+          >
+            TaskCraft
+          </span>
         </div>
 
-        <span
-          style={{
-            fontSize: "1.25rem",
-            fontWeight: 800,
-            color: "#0F172A",
-            fontFamily: '"Plus Jakarta Sans", sans-serif',
-            lineHeight: 1,
-            whiteSpace: "nowrap",
-          }}
-        >
-          TaskCraft
-        </span>
+        {onClose && (
+          <IconButton onClick={onClose} size="small" sx={{ color: "#64748B" }}>
+            <X size={20} />
+          </IconButton>
+        )}
       </div>
 
       <div style={{ height: "1px", backgroundColor: "#F1F5F9", margin: "0 20px 16px 20px" }} />

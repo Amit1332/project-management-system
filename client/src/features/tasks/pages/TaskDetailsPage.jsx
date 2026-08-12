@@ -18,6 +18,7 @@ import {
   Tabs,
   Tab,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   CheckSquare,
@@ -229,180 +230,199 @@ const TaskDetailsPage = () => {
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, md: 4 },
+          p: { xs: 2.5, sm: 3, md: 3.5 },
           mb: 4,
           borderRadius: 3.5,
           border: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
+          position: "relative",
         }}
       >
-        <div
-          style={{
+        {/* Top-Right Absolute Positioned Action Icon Buttons (Mobile & Desktop) */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: { xs: 16, md: 20 },
+            right: { xs: 16, md: 24 },
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: "20px",
-            width: "100%",
+            gap: 1,
+            zIndex: 2,
           }}
         >
-          {/* Left Side: Avatar/Icon + Title + Chips + Description + Labels */}
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "18px", flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "14px",
-                backgroundColor: "#4F46E5",
-                color: "#FFFFFF",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 6px 16px rgba(79, 70, 229, 0.25)",
+          <Tooltip title="Kanban Board">
+            <IconButton
+              onClick={() => navigate(`/projects/${projectId}/board`)}
+              sx={{
+                border: "1px solid",
+                borderColor: "#C7D2FE",
+                bgcolor: "#EEF2FF",
+                color: "#4F46E5",
+                "&:hover": { bgcolor: "#E0E7FF" },
+                borderRadius: 2,
+                p: 0.8,
+                mr: 0.5,
               }}
             >
-              <CheckSquare size={24} color="#FFFFFF" />
-            </div>
+              <Columns3 size={18} color="#4F46E5" />
+            </IconButton>
+          </Tooltip>
 
-            <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
-              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-                  {task.title}
-                </Typography>
-                <StatusChip label={task.status || "TODO"} />
-                <PriorityChip priority={task.priority || "MEDIUM"} />
-              </div>
+          <Tooltip title={!canManageTask ? "Only Managers & Admins can edit task details" : "Edit Task"}>
+            <span>
+              <IconButton
+                disabled={!canManageTask}
+                onClick={() => setIsEditOpen(true)}
+                sx={{
+                  bgcolor: "#4F46E5",
+                  color: "#FFFFFF",
+                  "&:hover": { bgcolor: "#4338CA" },
+                  "&.Mui-disabled": { bgcolor: "#E2E8F0", color: "#94A3B8" },
+                  borderRadius: 2,
+                  p: 0.8,
+                }}
+              >
+                <Edit3 size={18} color="#FFFFFF" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
 
-              {task.description && (
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                  {task.description}
-                </Typography>
-              )}
+        {/* Left Side Main Content: Icon & Title in Row */}
+        <Box display="flex" alignItems="center" gap={2} mb={2} pr={{ xs: "95px", md: "450px" }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 3,
+              bgcolor: "#4F46E5",
+              color: "#FFFFFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.25)",
+            }}
+          >
+            <CheckSquare size={22} color="#FFFFFF" />
+          </Box>
 
-              {task.labels && task.labels.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                  {task.labels.map((label, idx) => (
-                    <Chip
-                      key={idx}
-                      label={label}
-                      size="small"
-                      sx={{
-                        height: 22,
-                        fontSize: "0.72rem",
-                        fontWeight: 700,
-                        bgcolor: "#F1F5F9",
-                        color: "#475569",
-                        borderRadius: 1.5,
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em" noWrap>
+            {task.title}
+          </Typography>
+        </Box>
 
-          {/* Right Side: Action Buttons on Far Right */}
-          <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<Columns3 size={18} />}
-              onClick={() => navigate(`/projects/${projectId}/board`)}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2.5, py: 1.2, whiteSpace: "nowrap" }}
-            >
-              Kanban Board
-            </Button>
+        {/* Task Description & Labels */}
+        {(task.description || (task.labels && task.labels.length > 0)) && (
+          <Box pr={{ xs: 0, md: "150px" }} mt={1}>
+            {task.description && (
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                {task.description}
+              </Typography>
+            )}
 
-            <Tooltip title={!canManageTask ? "Only Managers & Admins can edit task details" : ""}>
-              <span>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={!canManageTask}
-                  startIcon={<Edit3 size={18} />}
-                  onClick={() => setIsEditOpen(true)}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    borderRadius: 2.5,
-                    px: 2.5,
-                    py: 1.2,
-                    boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Edit Task
-                </Button>
-              </span>
-            </Tooltip>
-          </div>
-        </div>
+            {task.labels && task.labels.length > 0 && (
+              <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap" mt={1}>
+                {task.labels.map((label, idx) => (
+                  <Chip
+                    key={idx}
+                    label={label}
+                    size="small"
+                    sx={{
+                      height: 22,
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      bgcolor: "#F1F5F9",
+                      color: "#475569",
+                      borderRadius: 1.5,
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
 
-        <Divider sx={{ my: 3 }} />
+        <Divider sx={{ my: 2.5 }} />
 
-        {/* Property Selectors (Medium Size & Spacing) */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, sm: 4 }}>
+        {/* Bottom Section: Select Fields (Status, Priority, Assignee) */}
+        <Box display="flex" alignItems="center" flexWrap="wrap">
+          {/* Status Select */}
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={task.status || "TODO"}
+            onChange={handleStatusChange}
+            sx={{
+              minWidth: 130,
+              mx: 1.5,
+              my: 0.5,
+              "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
+              "& .MuiInputLabel-root": { fontSize: "0.78rem" },
+            }}
+          >
+            <MenuItem value="TODO">TODO</MenuItem>
+            <MenuItem value="IN_PROGRESS">IN_PROGRESS</MenuItem>
+            <MenuItem value="IN_REVIEW">IN_REVIEW</MenuItem>
+            <MenuItem value="DONE">DONE</MenuItem>
+          </TextField>
+
+          {/* Priority Select */}
+          <Tooltip title={!canManageTask ? "Only Managers & Admins can change priority" : ""}>
             <TextField
               select
-              size="medium"
-              fullWidth
-              label="Status Stage"
-              value={task.status || "TODO"}
-              onChange={handleStatusChange}
+              size="small"
+              disabled={!canManageTask}
+              label="Priority"
+              value={task.priority || "MEDIUM"}
+              onChange={handlePriorityChange}
+              sx={{
+                minWidth: 130,
+                mx: 1.5,
+                my: 0.5,
+                "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
+                "& .MuiInputLabel-root": { fontSize: "0.78rem" },
+              }}
             >
-              <MenuItem value="TODO">TODO</MenuItem>
-              <MenuItem value="IN_PROGRESS">IN_PROGRESS</MenuItem>
-              <MenuItem value="IN_REVIEW">IN_REVIEW</MenuItem>
-              <MenuItem value="DONE">DONE</MenuItem>
+              <MenuItem value="LOW">LOW</MenuItem>
+              <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+              <MenuItem value="HIGH">HIGH</MenuItem>
+              <MenuItem value="CRITICAL">CRITICAL</MenuItem>
             </TextField>
-          </Grid>
+          </Tooltip>
 
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Tooltip title={!canManageTask ? "Only Managers & Admins can change task priority" : ""}>
-              <TextField
-                select
-                size="medium"
-                fullWidth
-                disabled={!canManageTask}
-                label="Priority"
-                value={task.priority || "MEDIUM"}
-                onChange={handlePriorityChange}
-              >
-                <MenuItem value="LOW">LOW</MenuItem>
-                <MenuItem value="MEDIUM">MEDIUM</MenuItem>
-                <MenuItem value="HIGH">HIGH</MenuItem>
-                <MenuItem value="CRITICAL">CRITICAL</MenuItem>
-              </TextField>
-            </Tooltip>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Tooltip title={!canManageTask ? "Only Managers & Admins can assign tasks" : ""}>
-              <TextField
-                select
-                size="medium"
-                fullWidth
-                disabled={!canManageTask}
-                label="Assignee"
-                value={assignee._id || ""}
-                onChange={handleAssigneeChange}
-              >
-                <MenuItem value="">Unassigned</MenuItem>
-                {members.map((m) => {
-                  const u = m.userId || {};
-                  return (
-                    <MenuItem key={u._id} value={u._id}>
-                      {u.name}
-                    </MenuItem>
-                  );
-                })}
-              </TextField>
-            </Tooltip>
-          </Grid>
-        </Grid>
+          {/* Assignee Select */}
+          <Tooltip title={!canManageTask ? "Only Managers & Admins can assign tasks" : ""}>
+            <TextField
+              select
+              size="small"
+              disabled={!canManageTask}
+              label="Assignee"
+              value={assignee._id || ""}
+              onChange={handleAssigneeChange}
+              sx={{
+                minWidth: 140,
+                mx: 1.5,
+                my: 0.5,
+                "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
+                "& .MuiInputLabel-root": { fontSize: "0.78rem" },
+              }}
+            >
+              <MenuItem value="">Unassigned</MenuItem>
+              {members.map((m) => {
+                const u = m.userId || {};
+                return (
+                  <MenuItem key={u._id} value={u._id}>
+                    {u.name}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          </Tooltip>
+        </Box>
       </Paper>
 
       {/* Tabs for Comments vs Activity Log */}

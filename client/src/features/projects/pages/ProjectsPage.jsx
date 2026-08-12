@@ -8,9 +8,9 @@ import {
   Paper,
   MenuItem,
   TextField,
-  Typography,
+  Button,
 } from "@mui/material";
-import { FolderKanban, Plus } from "lucide-react";
+import { FolderKanban, Plus, RotateCcw } from "lucide-react";
 
 import { useGetProjectsQuery } from "../api/projectApi";
 import ProjectCard from "../components/ProjectCard";
@@ -31,6 +31,15 @@ const ProjectsPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const hasActiveFilters = Boolean(search || statusFilter || priorityFilter);
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setPriorityFilter("");
+    setPage(1);
+  };
 
   const {
     data,
@@ -85,30 +94,32 @@ const ProjectsPage = () => {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 2.5,
           mb: 4,
-          borderRadius: 3,
+          borderRadius: 3.5,
           border: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
         }}
       >
         <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 5 }}>
+          <Grid size={{ xs: 12, md: hasActiveFilters ? 4 : 5 }}>
             <SearchInput
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
+              onClear={() => setSearch("")}
               placeholder="Search projects by name..."
+              size="medium"
             />
           </Grid>
 
-          <Grid size={{ xs: 6, md: 3.5 }}>
+          <Grid size={{ xs: 6, md: hasActiveFilters ? 3 : 3.5 }}>
             <TextField
               select
-              size="small"
+              size="medium"
               fullWidth
               label="Status"
               value={statusFilter}
@@ -126,10 +137,10 @@ const ProjectsPage = () => {
             </TextField>
           </Grid>
 
-          <Grid size={{ xs: 6, md: 3.5 }}>
+          <Grid size={{ xs: 6, md: hasActiveFilters ? 3 : 3.5 }}>
             <TextField
               select
-              size="small"
+              size="medium"
               fullWidth
               label="Priority"
               value={priorityFilter}
@@ -145,6 +156,21 @@ const ProjectsPage = () => {
               <MenuItem value="CRITICAL">CRITICAL</MenuItem>
             </TextField>
           </Grid>
+
+          {hasActiveFilters && (
+            <Grid size={{ xs: 12, md: 2 }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={handleResetFilters}
+                startIcon={<RotateCcw size={16} />}
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, py: 1.1 }}
+              >
+                Reset
+              </Button>
+            </Grid>
+          )}
         </Grid>
       </Paper>
 
@@ -160,9 +186,9 @@ const ProjectsPage = () => {
       ) : projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title={search || statusFilter || priorityFilter ? "No matching projects" : "No projects created yet"}
+          title={hasActiveFilters ? "No matching projects" : "No projects created yet"}
           description={
-            search || statusFilter || priorityFilter
+            hasActiveFilters
               ? "Try adjusting your search filters to find projects."
               : "Get started by creating your first project for this organization."
           }

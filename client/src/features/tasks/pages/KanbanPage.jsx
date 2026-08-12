@@ -95,6 +95,7 @@ const KanbanPage = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState("TODO");
+  const [dragOverStage, setDragOverStage] = useState(null);
 
   const project = projectData?.data || {};
   const kanban = kanbanData?.data || {};
@@ -103,7 +104,7 @@ const KanbanPage = () => {
     try {
       await updateTaskStatus({
         projectId,
-        taskId: task._id,
+        taskId: task._id || task,
         status: newStatus,
         organizationId: currentOrganization?._id,
       }).unwrap();
@@ -123,6 +124,32 @@ const KanbanPage = () => {
   const handleAddTaskToStage = (stageId) => {
     setSelectedStage(stageId);
     setIsCreateOpen(true);
+  };
+
+  // Drag and Drop handlers for Stage Columns
+  const handleDragOverColumn = (e, stageId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverStage !== stageId) {
+      setDragOverStage(stageId);
+    }
+  };
+
+  const handleDragLeaveColumn = (e, stageId) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverStage(null);
+    }
+  };
+
+  const handleDropTaskOnColumn = async (e, targetStageId) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const taskId = e.dataTransfer.getData("text/plain");
+    const sourceStatus = e.dataTransfer.getData("sourceStatus");
+
+    if (taskId && targetStageId !== sourceStatus) {
+      await handleStatusChange({ _id: taskId }, targetStageId);
+    }
   };
 
   if (isLoading) {
@@ -220,7 +247,7 @@ const KanbanPage = () => {
                 {project.name ? `${project.name} Board` : "Project Board"}
               </Typography>
               <Typography variant="body2" color="text.secondary" mt={0.3} noWrap>
-                Track task stages, status transitions, and team progress
+                Drag and drop tasks between stage columns to instantly update task status
               </Typography>
             </div>
           </div>
@@ -252,23 +279,29 @@ const KanbanPage = () => {
         {STAGES.map((stage) => {
           const StageIcon = stage.icon;
           const stageTasks = kanban[stage.id] || kanban[stage.id.toLowerCase()] || [];
+          const isOver = dragOverStage === stage.id;
 
           return (
             <Grid key={stage.id} size={{ xs: 12, sm: 6, md: 3 }}>
               <Paper
                 elevation={0}
+                onDragOver={(e) => handleDragOverColumn(e, stage.id)}
+                onDragLeave={(e) => handleDragLeaveColumn(e, stage.id)}
+                onDrop={(e) => handleDropTaskOnColumn(e, stage.id)}
                 sx={{
                   p: 2,
-                  minHeight: 520,
+                  minHeight: 560,
                   borderRadius: 3.5,
-                  bgcolor: stage.bg,
-                  border: "1px solid",
-                  borderColor: "divider",
+                  bgcolor: isOver ? "#EEF2FF" : stage.bg,
+                  border: isOver ? "2px dashed #4F46E5" : "1px solid",
+                  borderColor: isOver ? "#4F46E5" : "divider",
                   display: "flex",
                   flexDirection: "column",
+                  transition: "all 0.2s ease-in-out",
+                  boxShadow: isOver ? "0 10px 30px rgba(79, 70, 229, 0.15)" : "none",
                 }}
               >
-                {/* Stage Column Header: Icon + Stage Label + Count Chip on Left, + Button on Right */}
+                {/* Stage Column Header */}
                 <div
                   style={{
                     display: "flex",
@@ -322,28 +355,32 @@ const KanbanPage = () => {
                       p={3}
                       textAlign="center"
                       borderRadius={2.5}
-                      border="1px dashed"
-                      borderColor="divider"
+                      border={isOver ? "2px dashed #4F46E5" : "1px dashed"}
+                      borderColor={isOver ? "#4F46E5" : "divider"}
                       bgcolor="background.paper"
                       my="auto"
+                      sx={{ transition: "all 0.2s ease" }}
                     >
-                      <Typography variant="caption" color="text.secondary" fontWeight={500} display="block">
-                        No tasks in {stage.label}
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                        {isOver ? "Drop task here" : `No tasks in ${stage.label}`}
                       </Typography>
-                      <Button
-                        size="small"
-                        variant="text"
-                        onClick={() => handleAddTaskToStage(stage.id)}
-                        sx={{ fontSize: "0.75rem", textTransform: "none", mt: 0.5, fontWeight: 700 }}
-                      >
-                        + Add Task
-                      </Button>
+                      {!isOver && (
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => handleAddTaskToStage(stage.id)}
+                          sx={{ fontSize: "0.75rem", textTransform: "none", mt: 0.5, fontWeight: 700 }}
+                        >
+                          + Add Task
+                        </Button>
+                      )}
                     </Box>
                   ) : (
                     stageTasks.map((task) => (
                       <TaskCard
                         key={task._id}
                         task={task}
+                        draggable
                         onStatusChange={handleStatusChange}
                         onArchive={handleArchive}
                       />

@@ -9,8 +9,9 @@ import {
   Paper,
   MenuItem,
   TextField,
+  Button,
 } from "@mui/material";
-import { CheckSquare, Plus, Columns3 } from "lucide-react";
+import { CheckSquare, Plus, RotateCcw } from "lucide-react";
 
 import { useGetProjectsQuery } from "../../projects/api/projectApi";
 import { useGetTasksQuery, useUpdateTaskStatusMutation, useArchiveTaskMutation } from "../api/taskApi";
@@ -34,6 +35,15 @@ const TasksPage = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const hasActiveFilters = Boolean(search || statusFilter || priorityFilter);
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setPriorityFilter("");
+    setPage(1);
+  };
 
   // Fetch projects in workspace for selector
   const { data: projectsData } = useGetProjectsQuery(
@@ -119,9 +129,9 @@ const TasksPage = () => {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 2.5,
           mb: 4,
-          borderRadius: 3,
+          borderRadius: 3.5,
           border: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
@@ -131,7 +141,7 @@ const TasksPage = () => {
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <TextField
               select
-              size="small"
+              size="medium"
               fullWidth
               label="Select Project"
               value={activeProjectId}
@@ -154,21 +164,23 @@ const TasksPage = () => {
             </TextField>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, md: hasActiveFilters ? 3 : 3.5 }}>
             <SearchInput
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
+              onClear={() => setSearch("")}
               placeholder="Search tasks..."
+              size="medium"
             />
           </Grid>
 
-          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 3, md: hasActiveFilters ? 2.2 : 2.75 }}>
             <TextField
               select
-              size="small"
+              size="medium"
               fullWidth
               label="Status"
               value={statusFilter}
@@ -185,10 +197,10 @@ const TasksPage = () => {
             </TextField>
           </Grid>
 
-          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
+          <Grid size={{ xs: 6, sm: 3, md: hasActiveFilters ? 2.2 : 2.75 }}>
             <TextField
               select
-              size="small"
+              size="medium"
               fullWidth
               label="Priority"
               value={priorityFilter}
@@ -204,6 +216,21 @@ const TasksPage = () => {
               <MenuItem value="CRITICAL">CRITICAL</MenuItem>
             </TextField>
           </Grid>
+
+          {hasActiveFilters && (
+            <Grid size={{ xs: 12, md: 1.6 }}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={handleResetFilters}
+                startIcon={<RotateCcw size={16} />}
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, py: 1.1 }}
+              >
+                Reset
+              </Button>
+            </Grid>
+          )}
         </Grid>
       </Paper>
 
@@ -227,9 +254,9 @@ const TasksPage = () => {
       ) : tasks.length === 0 ? (
         <EmptyState
           icon={CheckSquare}
-          title={search || statusFilter || priorityFilter ? "No matching tasks" : "No tasks in this project yet"}
+          title={hasActiveFilters ? "No matching tasks" : "No tasks in this project yet"}
           description={
-            search || statusFilter || priorityFilter
+            hasActiveFilters
               ? "Try adjusting your search query or status filter."
               : "Get started by creating your first task for this project."
           }

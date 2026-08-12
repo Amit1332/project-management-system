@@ -19,12 +19,14 @@ import { formatDate } from "../../../utils/formatDate";
 
 import { useNavigate } from "react-router-dom";
 
-const TaskCard = ({ task, onEdit, onArchive, onStatusChange }) => {
+const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, onDragStart, onDragEnd }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [isDragging, setIsDragging] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const handleCardClick = () => {
+    if (isDragging) return;
     const activeProjectId = task.projectId?._id || task.projectId;
     if (activeProjectId) {
       navigate(`/projects/${activeProjectId}/tasks/${task._id}`);
@@ -54,21 +56,46 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange }) => {
       .slice(0, 2);
   };
 
+  const handleDragStartInternal = (e) => {
+    setIsDragging(true);
+    e.dataTransfer.setData("text/plain", task._id);
+    e.dataTransfer.setData("sourceStatus", task.status || "");
+    e.dataTransfer.effectAllowed = "move";
+    if (onDragStart) {
+      onDragStart(e, task);
+    }
+  };
+
+  const handleDragEndInternal = (e) => {
+    setIsDragging(false);
+    if (onDragEnd) {
+      onDragEnd(e, task);
+    }
+  };
+
   return (
     <Card
       elevation={0}
+      draggable={draggable}
+      onDragStart={handleDragStartInternal}
+      onDragEnd={handleDragEndInternal}
       onClick={handleCardClick}
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        borderColor: "divider",
+        borderColor: isDragging ? "primary.main" : "divider",
         bgcolor: "background.paper",
-        cursor: "pointer",
-        transition: "all 0.2s ease-in-out",
-        boxShadow: "0 2px 6px rgba(15, 23, 42, 0.04)",
+        cursor: draggable ? "grab" : "pointer",
+        opacity: isDragging ? 0.5 : 1,
+        transform: isDragging ? "scale(0.98)" : "none",
+        transition: "all 0.18s ease-in-out",
+        boxShadow: isDragging ? "0 10px 25px rgba(79, 70, 229, 0.25)" : "0 2px 6px rgba(15, 23, 42, 0.04)",
         "&:hover": {
           boxShadow: "0 8px 20px -4px rgba(15, 23, 42, 0.1)",
           borderColor: "primary.light",
+        },
+        "&:active": {
+          cursor: draggable ? "grabbing" : "pointer",
         },
       }}
     >

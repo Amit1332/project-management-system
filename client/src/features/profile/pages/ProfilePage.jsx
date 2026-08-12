@@ -147,20 +147,6 @@ const ProfilePage = () => {
               </Box>
             </Box>
           </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Box display="flex" alignItems="center" gap={2} p={2.5} bgcolor="#F8FAFC" borderRadius={3} border="1px solid #E2E8F0">
-              <ShieldCheck color="#4F46E5" size={22} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  Authentication Status
-                </Typography>
-                <Typography variant="body1" fontWeight={700} color="text.primary">
-                  JWT Authenticated
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
         </Grid>
       </Paper>
     </Box>

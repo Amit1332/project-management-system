@@ -161,10 +161,11 @@ const getTasks = async ({
     filter.assigneeId = assigneeId;
   }
 
-  if (search) {
-    filter.$text = {
-      $search: search,
-    };
+  if (search && search.trim()) {
+    filter.$or = [
+      { title: { $regex: search.trim(), $options: "i" } },
+      { description: { $regex: search.trim(), $options: "i" } },
+    ];
   }
 
   const allowedSortFields = [

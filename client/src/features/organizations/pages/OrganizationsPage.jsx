@@ -1,8 +1,8 @@
 // src/features/organizations/pages/OrganizationsPage.jsx
 
 import React, { useState } from "react";
-import { Box, Grid, Typography, Button, Paper } from "@mui/material";
-import { Building, Plus } from "lucide-react";
+import { Box, Grid, Paper, Button } from "@mui/material";
+import { Building, Plus, RotateCcw } from "lucide-react";
 
 import { useGetMyOrganizationsQuery } from "../api/organizationApi";
 import OrganizationCard from "../components/OrganizationCard";
@@ -44,22 +44,39 @@ const OrganizationsPage = () => {
         <Paper
           elevation={0}
           sx={{
-            p: 2,
+            p: 2.5,
             mb: 4,
-            borderRadius: 3,
+            borderRadius: 3.5,
             border: "1px solid",
             borderColor: "divider",
             bgcolor: "background.paper",
           }}
         >
           <Grid container spacing={2} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid size={{ xs: 12, md: search ? 6 : 8 }}>
               <SearchInput
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onClear={() => setSearch("")}
                 placeholder="Search organizations by name or description..."
+                size="medium"
               />
             </Grid>
+
+            {search && (
+              <Grid size={{ xs: 12, md: 2 }}>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => setSearch("")}
+                  startIcon={<RotateCcw size={16} />}
+                  fullWidth
+                  sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, py: 1.1 }}
+                >
+                  Reset
+                </Button>
+              </Grid>
+            )}
           </Grid>
         </Paper>
       )}

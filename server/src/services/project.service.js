@@ -57,6 +57,7 @@ const getProjects = async ({
   limit = 20,
   status,
   priority,
+  search,
 }) => {
   const skip = (page - 1) * limit;
 
@@ -70,6 +71,13 @@ const getProjects = async ({
 
   if (priority) {
     filter.priority = priority;
+  }
+
+  if (search && search.trim()) {
+    filter.$or = [
+      { name: { $regex: search.trim(), $options: "i" } },
+      { description: { $regex: search.trim(), $options: "i" } },
+    ];
   }
 
   const [projects, total] = await Promise.all([

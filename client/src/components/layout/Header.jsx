@@ -47,8 +47,15 @@ const Header = ({ onMobileMenuOpen }) => {
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, sm: 3 } }}>
-        {/* Left Side: Mobile Drawer Trigger & Page Context Header */}
-        <Box display="flex" alignItems="center" gap={2}>
+        {/* Left Side: Mobile Drawer Trigger & Page Context Header - Strictly Horizontal Row */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
           <IconButton
             onClick={onMobileMenuOpen}
             edge="start"
@@ -58,20 +65,10 @@ const Header = ({ onMobileMenuOpen }) => {
             <MenuIcon size={20} />
           </IconButton>
 
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="text.primary" lineHeight={1.2}>
-              {currentTitle}
-            </Typography>
-            {currentOrganization && (
-              <Box display="flex" alignItems="center" gap={0.5} mt={0.2}>
-                <Building size={12} color="#64748B" />
-                <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                  {currentOrganization.name}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
+          <Typography variant="subtitle1" fontWeight={700} color="text.primary" sx={{ lineHeight: 1, whiteSpace: "nowrap" }}>
+            {currentTitle}
+          </Typography>
+        </div>
 
         {/* Right Side: Active Workspace Badge, Notification Dropdown & User Menu strictly horizontal row */}
         <div

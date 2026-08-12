@@ -27,6 +27,7 @@ import {
   useUpdateMemberRoleMutation,
   useRemoveMemberMutation,
 } from "../api/organizationApi";
+import SearchInput from "../../../components/common/SearchInput";
 import StatusChip from "../../../components/common/StatusChip";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
@@ -36,6 +37,8 @@ import { formatError } from "../../../utils/formatError";
 
 const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
   const { user: currentUser } = useSelector((state) => state.auth);
+
+  const [search, setSearch] = useState("");
 
   const {
     data: membersData,
@@ -54,6 +57,16 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
   const [memberToRemove, setMemberToRemove] = useState(null);
 
   const members = membersData?.data || [];
+
+  const filteredMembers = members.filter((m) => {
+    const u = m.userId || {};
+    const q = search.toLowerCase();
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q)) ||
+      (m.role && m.role.toLowerCase().includes(q))
+    );
+  });
 
   const isOwner = currentUserRole === "OWNER";
   const isAdmin = currentUserRole === "ADMIN" || isOwner;
@@ -112,11 +125,28 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
         </Alert>
       )}
 
-      {members.length === 0 ? (
+      {/* Member Search Bar */}
+      {members.length > 0 && (
+        <Box mb={2.5} maxWidth={400}>
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+            placeholder="Search members by name or email..."
+            size="medium"
+          />
+        </Box>
+      )}
+
+      {filteredMembers.length === 0 ? (
         <EmptyState
           icon={UserX}
-          title="No members found"
-          description="There are no active members in this organization."
+          title={search ? "No matching members found" : "No members found"}
+          description={
+            search
+              ? `No organization member matched "${search}".`
+              : "There are no active members in this organization."
+          }
         />
       ) : (
         <TableContainer
@@ -139,7 +169,7 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {members.map((member) => {
+              {filteredMembers.map((member) => {
                 const memberUser = member.userId || {};
                 const isSelf = memberUser._id === currentUser?.id || memberUser._id === currentUser?._id;
                 const isMemberOwner = member.role === "OWNER";
@@ -147,7 +177,6 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
                 return (
                   <TableRow key={member._id || memberUser._id} hover>
                     <TableCell>
-                      {/* Avatar and Name strictly side-by-side in horizontal row */}
                       <div
                         style={{
                           display: "flex",
@@ -190,7 +219,6 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
                     </TableCell>
 
                     <TableCell>
-                      {/* Only OWNER can change role of non-owner members */}
                       {isOwner && !isMemberOwner && !isSelf ? (
                         <FormControl size="small" sx={{ minWidth: 120 }}>
                           <Select
@@ -198,8 +226,8 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
                             onChange={(e) => handleRoleChange(memberUser._id, e.target.value)}
                             disabled={isRoleUpdating}
                             sx={{
-                              height: 30,
-                              fontSize: "0.75rem",
+                              height: 34,
+                              fontSize: "0.8rem",
                               fontWeight: 600,
                               borderRadius: 2,
                             }}
