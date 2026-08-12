@@ -71,30 +71,38 @@ const LoginForm = () => {
     <Box component="form" onSubmit={handleSubmit} noValidate>
       {/* Brand Icon Header */}
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+       
         <div
-          style={{
-            width: "44px",
-            height: "44px",
-            borderRadius: "12px",
-            backgroundColor: "#4F46E5",
-            color: "#FFFFFF",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 6px 16px rgba(79, 70, 229, 0.3)",
-          }}
-        >
-          <Rocket size={22} color="#FFFFFF" />
-        </div>
+  style={{
+    width: "44px",
+    height: "44px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    overflow: "hidden",
+  }}
+>
+  <img
+    src="/favicon.png"
+    alt="Sunday logo"
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "contain",
+    }}
+  />
+</div>
         <Typography variant="h6" fontWeight={800} color="#0F172A">
-          TaskCraft
+          Sunday
         </Typography>
       </div>
 
       {/* Main Form Title - Generous 32px Bottom Margin */}
       <div style={{ marginBottom: "32px" }}>
         <Typography variant="h4" fontWeight={800} color="#0F172A" letterSpacing="-0.02em">
-          Sign in to TaskCraft
+          Sign in to Sunday
         </Typography>
       </div>
 

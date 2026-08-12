@@ -100,57 +100,64 @@ const KanbanPage = () => {
   const project = projectData?.data || {};
   const kanban = kanbanData?.data || {};
 
-  const handleStatusChange = async (task, newStatus) => {
-    try {
-      await updateTaskStatus({
-        projectId,
-        taskId: task._id || task,
-        status: newStatus,
-        organizationId: currentOrganization?._id,
-      }).unwrap();
-    } catch (err) {}
-  };
+  const handleStatusChange = React.useCallback(
+    async (task, newStatus) => {
+      try {
+        updateTaskStatus({
+          projectId,
+          taskId: task._id || task,
+          status: newStatus,
+          organizationId: currentOrganization?._id,
+        });
+      } catch (err) {}
+    },
+    [projectId, currentOrganization?._id, updateTaskStatus]
+  );
 
-  const handleArchive = async (task) => {
-    try {
-      await archiveTask({
-        projectId,
-        taskId: task._id,
-        organizationId: currentOrganization?._id,
-      }).unwrap();
-    } catch (err) {}
-  };
+  const handleArchive = React.useCallback(
+    async (task) => {
+      try {
+        await archiveTask({
+          projectId,
+          taskId: task._id,
+          organizationId: currentOrganization?._id,
+        }).unwrap();
+      } catch (err) {}
+    },
+    [projectId, currentOrganization?._id, archiveTask]
+  );
 
-  const handleAddTaskToStage = (stageId) => {
+  const handleAddTaskToStage = React.useCallback((stageId) => {
     setSelectedStage(stageId);
     setIsCreateOpen(true);
-  };
+  }, []);
 
-  // Drag and Drop handlers for Stage Columns
-  const handleDragOverColumn = (e, stageId) => {
+  // Drag and Drop handlers for Stage Columns - Optimized for 0ms lag
+  const handleDragOverColumn = React.useCallback((e, stageId) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    if (dragOverStage !== stageId) {
-      setDragOverStage(stageId);
-    }
-  };
+    setDragOverStage((prev) => (prev !== stageId ? stageId : prev));
+  }, []);
 
-  const handleDragLeaveColumn = (e, stageId) => {
+  const handleDragLeaveColumn = React.useCallback((e, stageId) => {
     if (!e.currentTarget.contains(e.relatedTarget)) {
       setDragOverStage(null);
     }
-  };
+  }, []);
 
-  const handleDropTaskOnColumn = async (e, targetStageId) => {
-    e.preventDefault();
-    setDragOverStage(null);
-    const taskId = e.dataTransfer.getData("text/plain");
-    const sourceStatus = e.dataTransfer.getData("sourceStatus");
+  const handleDropTaskOnColumn = React.useCallback(
+    (e, targetStageId) => {
+      e.preventDefault();
+      setDragOverStage(null);
+      const taskId = e.dataTransfer.getData("text/plain");
+      const sourceStatus = e.dataTransfer.getData("sourceStatus");
 
-    if (taskId && targetStageId !== sourceStatus) {
-      await handleStatusChange({ _id: taskId }, targetStageId);
-    }
-  };
+      if (taskId && targetStageId !== sourceStatus) {
+        handleStatusChange({ _id: taskId }, targetStageId);
+      }
+    },
+    [handleStatusChange]
+  );
 
   if (isLoading) {
     return <LoadingSpinner label="Loading Kanban board..." py={8} />;
@@ -230,7 +237,7 @@ const KanbanPage = () => {
                 width: "44px",
                 height: "44px",
                 borderRadius: "12px",
-                backgroundColor: "#4F46E5",
+                backgroundColor: "#eb4634",
                 color: "#FFFFFF",
                 display: "flex",
                 alignItems: "center",
@@ -293,8 +300,8 @@ const KanbanPage = () => {
                   minHeight: 560,
                   borderRadius: 3.5,
                   bgcolor: isOver ? "#EEF2FF" : stage.bg,
-                  border: isOver ? "2px dashed #4F46E5" : "1px solid",
-                  borderColor: isOver ? "#4F46E5" : "divider",
+                  border: isOver ? "2px dashed #eb4634" : "1px solid",
+                  borderColor: isOver ? "#eb4634" : "divider",
                   display: "flex",
                   flexDirection: "column",
                   transition: "all 0.2s ease-in-out",
@@ -341,10 +348,10 @@ const KanbanPage = () => {
                       border: "1px solid #E2E8F0",
                       width: 28,
                       height: 28,
-                      "&:hover": { bgcolor: "#EEF2FF", borderColor: "#4F46E5" },
+                      "&:hover": { bgcolor: "#EEF2FF", borderColor: "#eb4634" },
                     }}
                   >
-                    <Plus size={16} color="#4F46E5" />
+                    <Plus size={16} color="#eb4634" />
                   </IconButton>
                 </div>
 
@@ -355,8 +362,8 @@ const KanbanPage = () => {
                       p={3}
                       textAlign="center"
                       borderRadius={2.5}
-                      border={isOver ? "2px dashed #4F46E5" : "1px dashed"}
-                      borderColor={isOver ? "#4F46E5" : "divider"}
+                      border={isOver ? "2px dashed #eb4634" : "1px dashed"}
+                      borderColor={isOver ? "#eb4634" : "divider"}
                       bgcolor="background.paper"
                       my="auto"
                       sx={{ transition: "all 0.2s ease" }}

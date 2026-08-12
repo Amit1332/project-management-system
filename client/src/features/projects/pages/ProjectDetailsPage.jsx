@@ -211,14 +211,14 @@ const ProjectDetailsPage = () => {
                 border: "1px solid",
                 borderColor: "#C7D2FE",
                 bgcolor: "#EEF2FF",
-                color: "#4F46E5",
+                color: "#eb4634",
                 "&:hover": { bgcolor: "#E0E7FF" },
                 borderRadius: 2,
                 p: 0.8,
                 mr: 1,
               }}
             >
-              <Columns3 size={18} color="#4F46E5" />
+              <Columns3 size={18} color="#eb4634" />
             </IconButton>
           </Tooltip>
 
@@ -226,7 +226,7 @@ const ProjectDetailsPage = () => {
             <IconButton
               onClick={() => setIsEditOpen(true)}
               sx={{
-                bgcolor: "#4F46E5",
+                bgcolor: "#eb4634",
                 color: "#FFFFFF",
                 "&:hover": { bgcolor: "#4338CA" },
                 borderRadius: 2,
@@ -246,7 +246,7 @@ const ProjectDetailsPage = () => {
               width: 44,
               height: 44,
               borderRadius: 3,
-              bgcolor: "#4F46E5",
+              bgcolor: "#eb4634",
               color: "#FFFFFF",
               display: "flex",
               alignItems: "center",

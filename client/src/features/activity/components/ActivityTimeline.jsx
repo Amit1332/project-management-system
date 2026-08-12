@@ -138,7 +138,7 @@ const ActivityTimeline = ({ projectId, taskId }) => {
   return (
     <Box>
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-        <Activity size={20} color="#4F46E5" />
+        <Activity size={20} color="#eb4634" />
         <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
           Activity History
         </Typography>
@@ -189,7 +189,7 @@ const ActivityTimeline = ({ projectId, taskId }) => {
                         sx={{
                           width: 34,
                           height: 34,
-                          bgcolor: "#4F46E5",
+                          bgcolor: "#eb4634",
                           fontSize: "0.75rem",
                           fontWeight: 700,
                           borderRadius: "8px",

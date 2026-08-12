@@ -172,7 +172,7 @@ const ProjectMembersSection = ({ projectId }) => {
         }}
       >
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
-          <Users size={20} color="#4F46E5" style={{ flexShrink: 0 }} />
+          <Users size={20} color="#eb4634" style={{ flexShrink: 0 }} />
           <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em" noWrap>
             Project Members & Roles ({projectMembers.length})
           </Typography>
@@ -227,7 +227,7 @@ const ProjectMembersSection = ({ projectId }) => {
                     <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px" }}>
                       <Avatar
                         src={u.avatar}
-                        sx={{ width: 34, height: 34, bgcolor: "#4F46E5", fontSize: "0.8rem", fontWeight: 700, borderRadius: "8px", flexShrink: 0 }}
+                        sx={{ width: 34, height: 34, bgcolor: "#eb4634", fontSize: "0.8rem", fontWeight: 700, borderRadius: "8px", flexShrink: 0 }}
                       >
                         {getInitials(u.name)}
                       </Avatar>

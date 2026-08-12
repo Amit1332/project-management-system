@@ -81,7 +81,7 @@ const Header = ({ onMobileMenuOpen }) => {
         >
           {currentOrganization ? (
             <Chip
-              icon={<Sparkles size={14} color="#4F46E5" />}
+              icon={<Sparkles size={14} color="#eb4634" />}
               label={currentOrganization.name}
               size="small"
               sx={{

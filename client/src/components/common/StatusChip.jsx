@@ -4,7 +4,7 @@ import React from "react";
 import { Chip } from "@mui/material";
 
 const roleColors = {
-  OWNER: { bg: "#EEF2FF", text: "#4F46E5", border: "#C7D2FE" },
+  OWNER: { bg: "#EEF2FF", text: "#eb4634", border: "#C7D2FE" },
   ADMIN: { bg: "#FEF3C7", text: "#D97706", border: "#FDE68A" },
   MANAGER: { bg: "#E0F2FE", text: "#0284C7", border: "#BAE6FD" },
   MEMBER: { bg: "#F1F5F9", text: "#475569", border: "#E2E8F0" },

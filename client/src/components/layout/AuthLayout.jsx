@@ -22,7 +22,7 @@ const AuthLayout = () => {
           display: { xs: "none", md: "flex" },
           width: "50%",
           minHeight: "100vh",
-          background: "linear-gradient(145deg, #090D16 0%, #0F172A 40%, #1E1B4B 100%)",
+          background: "linear-gradient(145deg, #4e0e03fb 0%, #050101 40%, #280d0a 100%)",
           color: "white",
           p: { md: 6, lg: 8 },
           flexDirection: "column",
@@ -49,23 +49,31 @@ const AuthLayout = () => {
 
         {/* Brand Header */}
         <Box display="inline-flex" alignItems="center" gap={1.5} sx={{ width: "fit-content" }}>
-          <Box
-            sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              p: 1.2,
-              borderRadius: 2.5,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 8px 20px rgba(79, 70, 229, 0.4)",
-            }}
-          >
-            <Rocket size={22} />
-          </Box>
+         <div
+  style={{
+    width: "44px",
+    height: "44px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    overflow: "hidden",
+  }}
+>
+  <img
+    src="/favicon.png"
+    alt="Sunday logo"
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "contain",
+    }}
+  />
+</div>
           <Box>
             <Typography variant="h6" fontWeight={800} letterSpacing="-0.02em" lineHeight={1.1}>
-              TaskCraft
+              Sunday
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.7 }} fontWeight={500}>
               Project Management Platform
@@ -108,7 +116,7 @@ const AuthLayout = () => {
                     width: "36px",
                     height: "36px",
                     borderRadius: "10px",
-                    backgroundColor: "#4F46E5",
+                    backgroundColor: "#ec5544",
                     color: "#FFFFFF",
                     display: "flex",
                     alignItems: "center",

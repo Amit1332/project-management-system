@@ -65,7 +65,7 @@ const ProfilePage = () => {
               sx={{
                 width: 68,
                 height: 68,
-                bgcolor: "#4F46E5",
+                bgcolor: "#eb4634",
                 fontSize: "1.5rem",
                 fontWeight: 700,
                 borderRadius: "16px",
@@ -108,7 +108,7 @@ const ProfilePage = () => {
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Box display="flex" alignItems="center" gap={2} p={2.5} bgcolor="#F8FAFC" borderRadius={3} border="1px solid #E2E8F0">
-              <User color="#4F46E5" size={22} />
+              <User color="#eb4634" size={22} />
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
                   Full Name
@@ -122,7 +122,7 @@ const ProfilePage = () => {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <Box display="flex" alignItems="center" gap={2} p={2.5} bgcolor="#F8FAFC" borderRadius={3} border="1px solid #E2E8F0">
-              <Mail color="#4F46E5" size={22} />
+              <Mail color="#eb4634" size={22} />
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
                   Email Address
@@ -136,7 +136,7 @@ const ProfilePage = () => {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <Box display="flex" alignItems="center" gap={2} p={2.5} bgcolor="#F8FAFC" borderRadius={3} border="1px solid #E2E8F0">
-              <Calendar color="#4F46E5" size={22} />
+              <Calendar color="#eb4634" size={22} />
               <Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
                   Member Since

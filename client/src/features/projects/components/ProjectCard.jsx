@@ -65,7 +65,7 @@ const ProjectCard = ({ project }) => {
             <Avatar
               sx={{
                 bgcolor: "#EEF2FF",
-                color: "#4F46E5",
+                color: "#eb4634",
                 width: 44,
                 height: 44,
                 borderRadius: 2.5,

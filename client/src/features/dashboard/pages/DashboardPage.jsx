@@ -130,7 +130,7 @@ const DashboardPage = () => {
             bgcolor: "background.paper",
           }}
         >
-          <Building size={48} color="#4F46E5" style={{ marginBottom: 16 }} />
+          <Building size={48} color="#eb4634" style={{ marginBottom: 16 }} />
           <Typography variant="h5" fontWeight={800} gutterBottom>
             No Active Organization Selected
           </Typography>
@@ -192,7 +192,7 @@ const DashboardPage = () => {
                 <Typography variant="caption" color="text.secondary" fontWeight={700}>
                   TOTAL PROJECTS
                 </Typography>
-                <Avatar sx={{ width: 40, height: 40, bgcolor: "#EEF2FF", color: "#4F46E5", borderRadius: 2.5 }}>
+                <Avatar sx={{ width: 40, height: 40, bgcolor: "#EEF2FF", color: "#eb4634", borderRadius: 2.5 }}>
                   <FolderKanban size={20} />
                 </Avatar>
               </Box>
@@ -315,7 +315,7 @@ const DashboardPage = () => {
               }}
             >
               <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                <PieIcon size={20} color="#4F46E5" />
+                <PieIcon size={20} color="#eb4634" />
                 <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
                   Tasks Breakdown by Status
                 </Typography>

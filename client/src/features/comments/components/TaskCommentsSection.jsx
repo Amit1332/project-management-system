@@ -258,7 +258,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
   return (
     <Box>
       <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-        <MessageSquare size={20} color="#4F46E5" />
+        <MessageSquare size={20} color="#eb4634" />
         <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
           Comments ({comments.length})
         </Typography>
@@ -298,7 +298,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
             sx={{
               width: 38,
               height: 38,
-              bgcolor: "#4F46E5",
+              bgcolor: "#eb4634",
               fontSize: "0.85rem",
               fontWeight: 700,
               borderRadius: "10px",
@@ -325,10 +325,10 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
                   borderRadius: 2.5,
                   transition: "border-color 0.2s",
                   "&:hover fieldset": {
-                    borderColor: "#4F46E5",
+                    borderColor: "#eb4634",
                   },
                   "&.Mui-focused fieldset": {
-                    borderColor: "#4F46E5",
+                    borderColor: "#eb4634",
                   },
                 },
               }}
@@ -359,7 +359,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
             >
               <Box p={1}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", marginBottom: 4 }}>
-                  <AtSign size={14} color="#4F46E5" />
+                  <AtSign size={14} color="#eb4634" />
                   <Typography variant="caption" color="text.secondary" fontWeight={800}>
                     SELECT MEMBER TO MENTION
                   </Typography>
@@ -383,7 +383,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
                         <ListItemAvatar sx={{ minWidth: 40 }}>
                           <Avatar
                             src={u.avatar}
-                            sx={{ width: 32, height: 32, bgcolor: "#4F46E5", fontSize: "0.75rem", fontWeight: 700 }}
+                            sx={{ width: 32, height: 32, bgcolor: "#eb4634", fontSize: "0.75rem", fontWeight: 700 }}
                           >
                             {getInitials(u.name)}
                           </Avatar>
@@ -499,7 +499,7 @@ const TaskCommentsSection = ({ projectId, taskId }) => {
                       sx={{
                         width: 36,
                         height: 36,
-                        bgcolor: "#4F46E5",
+                        bgcolor: "#eb4634",
                         fontSize: "0.8rem",
                         fontWeight: 700,
                         borderRadius: "10px",

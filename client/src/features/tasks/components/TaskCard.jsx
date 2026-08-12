@@ -181,7 +181,7 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
                 height: 26,
                 fontSize: "0.7rem",
                 fontWeight: 700,
-                bgcolor: assignee.name ? "#4F46E5" : "#CBD5E1",
+                bgcolor: assignee.name ? "#eb4634" : "#CBD5E1",
                 borderRadius: "6px",
                 flexShrink: 0,
               }}

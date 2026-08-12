@@ -105,10 +105,34 @@ export const taskApi = createApi({
             }
           })
         );
+
+        const patchKanban = dispatch(
+          taskApi.util.updateQueryData("getKanbanTasks", { projectId, organizationId }, (draft) => {
+            if (draft?.data) {
+              let movedTask = null;
+              Object.keys(draft.data).forEach((col) => {
+                if (Array.isArray(draft.data[col])) {
+                  const idx = draft.data[col].findIndex((t) => (t._id || t) === taskId);
+                  if (idx !== -1) {
+                    movedTask = { ...draft.data[col][idx] };
+                    draft.data[col].splice(idx, 1);
+                  }
+                }
+              });
+              if (movedTask) {
+                movedTask.status = status;
+                if (!draft.data[status]) draft.data[status] = [];
+                draft.data[status].unshift(movedTask);
+              }
+            }
+          })
+        );
+
         try {
           await queryFulfilled;
         } catch {
           patchTaskDetail.undo();
+          patchKanban.undo();
         }
       },
       invalidatesTags: (result, error, { taskId }) => [

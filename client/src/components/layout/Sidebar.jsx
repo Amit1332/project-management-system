@@ -113,22 +113,29 @@ const Sidebar = ({ onClose }) => {
         }}
       >
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px" }}>
-          <div
-            style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #4F46E5 0%, #3730A3 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
-              flexShrink: 0,
-            }}
-          >
-            <Rocket size={20} color="#FFFFFF" />
-          </div>
-
+        
+<div
+  style={{
+    width: "38px",
+    height: "38px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    overflow: "hidden",
+  }}
+>
+  <img
+    src="/favicon.png"
+    alt="Sunday logo"
+    style={{
+      width: "100%",
+      height: "100%",
+      objectFit: "contain",
+    }}
+  />
+</div>
           <span
             style={{
               fontSize: "1.25rem",
@@ -139,7 +146,7 @@ const Sidebar = ({ onClose }) => {
               whiteSpace: "nowrap",
             }}
           >
-            TaskCraft
+            Sunday
           </span>
         </div>
 
@@ -174,7 +181,7 @@ const Sidebar = ({ onClose }) => {
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: "#4F46E5",
+                bgcolor: "#eb4634",
                 fontSize: "0.78rem",
                 fontWeight: 700,
                 borderRadius: "8px",
@@ -277,7 +284,7 @@ const Sidebar = ({ onClose }) => {
               handleOrgClose();
               navigate("/organizations");
             }}
-            sx={{ color: "#4F46E5", fontWeight: 700, py: 1 }}
+            sx={{ color: "#eb4634", fontWeight: 700, py: 1 }}
           >
             <Plus size={16} style={{ marginRight: 8 }} />
             Create / Manage All
@@ -308,14 +315,14 @@ const Sidebar = ({ onClose }) => {
                 borderRadius: "10px",
                 textDecoration: "none",
                 backgroundColor: isActive ? "#EEF2FF" : "transparent",
-                color: isActive ? "#4F46E5" : "#64748B",
+                color: isActive ? "#eb4634" : "#64748B",
                 fontWeight: isActive ? 700 : 600,
                 fontSize: "0.9rem",
                 fontFamily: '"Plus Jakarta Sans", sans-serif',
                 transition: "all 0.2s ease-in-out",
               }}
             >
-              <Icon size={19} color={isActive ? "#4F46E5" : "#64748B"} style={{ flexShrink: 0 }} />
+              <Icon size={19} color={isActive ? "#eb4634" : "#64748B"} style={{ flexShrink: 0 }} />
               <span>{item.label}</span>
             </NavLink>
           );
@@ -343,7 +350,7 @@ const Sidebar = ({ onClose }) => {
               sx={{
                 width: 36,
                 height: 36,
-                bgcolor: "#4F46E5",
+                bgcolor: "#eb4634",
                 fontSize: "0.85rem",
                 fontWeight: 700,
                 borderRadius: "8px",

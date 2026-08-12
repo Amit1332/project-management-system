@@ -131,7 +131,7 @@ const OrganizationDetailsPage = () => {
                 width: "48px",
                 height: "48px",
                 borderRadius: "12px",
-                backgroundColor: "#4F46E5",
+                backgroundColor: "#eb4634",
                 color: "#FFFFFF",
                 display: "flex",
                 alignItems: "center",

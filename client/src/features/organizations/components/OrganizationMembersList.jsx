@@ -187,7 +187,7 @@ const OrganizationMembersList = ({ organizationId, currentUserRole }) => {
                       >
                         <Avatar
                           sx={{
-                            bgcolor: "#4F46E5",
+                            bgcolor: "#eb4634",
                             fontWeight: 700,
                             width: 36,
                             height: 36,

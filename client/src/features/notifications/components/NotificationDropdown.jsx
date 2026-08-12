@@ -117,7 +117,7 @@ const NotificationDropdown = () => {
     switch (type) {
       case "USER_MENTIONED":
       case "COMMENT_ADDED":
-        return <MessageSquare size={17} color="#4F46E5" />;
+        return <MessageSquare size={17} color="#eb4634" />;
       case "TASK_ASSIGNED":
       case "TASK_STATUS_CHANGED":
       case "TASK_DUE_SOON":
@@ -140,7 +140,7 @@ const NotificationDropdown = () => {
           height: 38,
           borderRadius: 2.5,
           boxShadow: "0 2px 4px rgba(15, 23, 42, 0.04)",
-          "&:hover": { bgcolor: "#EEF2FF", borderColor: "#4F46E5" },
+          "&:hover": { bgcolor: "#EEF2FF", borderColor: "#eb4634" },
         }}
       >
         <Badge badgeContent={unreadCount} color="error" max={99}>
