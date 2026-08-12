@@ -31,7 +31,21 @@ export const initSocket = (token) => {
     socket.disconnect();
   }
 
-  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || "http://localhost:3001";
+  const isProductionDomain =
+    typeof window !== "undefined" &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1";
+
+  const defaultBackendUrl = isProductionDomain
+    ? "https://project-management-system-31oc.onrender.com"
+    : "http://localhost:3001";
+
+  const rawSocketUrl =
+    import.meta.env.VITE_SOCKET_URL ||
+    import.meta.env.VITE_API_URL ||
+    defaultBackendUrl;
+
+  const SOCKET_URL = rawSocketUrl.replace(/\/+$/, "").replace(/\/api$/, "");
 
   socket = io(SOCKET_URL, {
     auth: {

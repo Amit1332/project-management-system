@@ -3,10 +3,20 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { logout } from "../features/auth/authSlice";
 
-const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const isProductionDomain =
+  typeof window !== "undefined" &&
+  window.location.hostname !== "localhost" &&
+  window.location.hostname !== "127.0.0.1";
+
+const defaultBackendUrl = isProductionDomain
+  ? "https://project-management-system-31oc.onrender.com"
+  : "http://localhost:3001";
+
+const rawApiUrl = import.meta.env.VITE_API_URL || defaultBackendUrl;
+const baseUrl = rawApiUrl.replace(/\/+$/, "");
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: `${baseUrl}/api`,
+  baseUrl: baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}/api`,
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.token || localStorage.getItem("token");
     const currentOrg = getState().auth.currentOrganization;
