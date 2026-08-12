@@ -14,43 +14,28 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan.errorHandler);
 }
 
-// Production-ready CORS configuration supporting Vercel & local environments
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "https://project-management-system-three-chi.vercel.app",
-  "http://localhost:5173",
-  "http://localhost:3000",
-].filter(Boolean);
+// Universal CORS & Preflight Middleware for Vercel, Render & Local Dev
+app.use((req, res, next) => {
+  const origin = req.headers.origin || "*";
+  
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Accept, x-organization-id, x-project-id"
+  );
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow non-browser requests (Postman, cURL, server-to-server)
-    if (!origin) return callback(null, true);
+  // Return HTTP 200 OK immediately for preflight OPTIONS requests
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
-    // Allow explicitly defined origins or any Vercel deployment
-    if (
-      allowedOrigins.includes(origin) ||
-      origin.endsWith(".vercel.app") ||
-      process.env.NODE_ENV !== "production"
-    ) {
-      return callback(null, true);
-    }
+  next();
+});
 
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept",
-    "x-organization-id",
-    "x-project-id",
-  ],
-};
-
-app.use(cors(corsOptions));
+// Backup CORS middleware
+app.use(cors({ origin: true, credentials: true }));
 
 app.use(express.json({ limit: "10kb" }));
 
