@@ -17,7 +17,6 @@ import {
   LayoutDashboard,
   Building,
   FolderKanban,
-  CheckSquare,
   User,
   Rocket,
   ChevronsUpDown,
@@ -33,7 +32,6 @@ export const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { label: "Organizations", path: "/organizations", icon: Building },
   { label: "Projects", path: "/projects", icon: FolderKanban },
-  { label: "Tasks", path: "/tasks", icon: CheckSquare },
   { label: "Profile", path: "/profile", icon: User },
 ];
 
@@ -50,6 +48,12 @@ const Sidebar = ({ onClose }) => {
   const isOrgMenuOpen = Boolean(orgMenuAnchor);
 
   const orgs = orgData?.data || [];
+
+  const orgRole = currentOrganization?.role || user?.role;
+  const canManageOrgs =
+    orgRole === "OWNER" ||
+    orgRole === "ADMIN" ||
+    user?.systemRole === "SUPER_ADMIN";
 
   const handleOrgClick = (e) => {
     setOrgMenuAnchor(e.currentTarget);
@@ -113,29 +117,28 @@ const Sidebar = ({ onClose }) => {
         }}
       >
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px" }}>
-        
-<div
-  style={{
-    width: "38px",
-    height: "38px",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    overflow: "hidden",
-  }}
->
-  <img
-    src="/favicon.png"
-    alt="Sunday logo"
-    style={{
-      width: "100%",
-      height: "100%",
-      objectFit: "contain",
-    }}
-  />
-</div>
+          <div
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              overflow: "hidden",
+            }}
+          >
+            <img
+              src="/favicon.png"
+              alt="Sunday logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
+          </div>
           <span
             style={{
               fontSize: "1.25rem",
@@ -239,14 +242,6 @@ const Sidebar = ({ onClose }) => {
             },
           }}
         >
-          <Box px={2} py={1}>
-            <Typography variant="caption" color="#64748B" fontWeight={700} textTransform="uppercase">
-              Your Workspaces
-            </Typography>
-          </Box>
-
-          <Divider />
-
           {orgs.length === 0 ? (
             <MenuItem disabled>No Workspaces Available</MenuItem>
           ) : (
@@ -277,22 +272,24 @@ const Sidebar = ({ onClose }) => {
             })
           )}
 
-          <Divider />
+          {canManageOrgs && <Divider />}
 
-          <MenuItem
-            onClick={() => {
-              handleOrgClose();
-              navigate("/organizations");
-            }}
-            sx={{ color: "#eb4634", fontWeight: 700, py: 1 }}
-          >
-            <Plus size={16} style={{ marginRight: 8 }} />
-            Create / Manage All
-          </MenuItem>
+          {canManageOrgs && (
+            <MenuItem
+              onClick={() => {
+                handleOrgClose();
+                navigate("/organizations");
+              }}
+              sx={{ color: "#eb4634", fontWeight: 700, py: 1 }}
+            >
+              <Plus size={16} style={{ marginRight: 8 }} />
+              Create / Manage All
+            </MenuItem>
+          )}
         </Menu>
       </div>
 
-      {/* 3. Main Navigation Links (No "Main Menu" text label!) */}
+      {/* 3. Main Navigation Links */}
       <div style={{ flex: 1, padding: "0 16px" }}>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -329,7 +326,7 @@ const Sidebar = ({ onClose }) => {
         })}
       </div>
 
-      {/* 4. Bottom User Profile Card - STRICTLY HORIZONTAL & ABSOLUTE BOTTOM */}
+      {/* 4. Bottom User Profile Card */}
       <div style={{ marginTop: "auto", padding: "16px" }}>
         <div
           style={{

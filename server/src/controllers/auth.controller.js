@@ -37,9 +37,20 @@ const logout = catchAsync(async (req, res) => {
   });
 });
 
+const searchUsers = catchAsync(async (req, res) => {
+  const query = req.query.search || req.query.q || "";
+  const users = await authService.searchUsers(query);
+
+  return res.status(200).json({
+    success: true,
+    data: users,
+  });
+});
+
 module.exports = {
   register,
   login,
   getMe,
   logout,
+  searchUsers,
 };

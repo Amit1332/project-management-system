@@ -1,6 +1,6 @@
 // src/features/tasks/pages/KanbanPage.jsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -29,7 +29,8 @@ import {
   useUpdateTaskStatusMutation,
   useArchiveTaskMutation,
 } from "../api/taskApi";
-import { useGetProjectQuery } from "../../projects/api/projectApi";
+import { useGetProjectQuery, useGetProjectMembersQuery } from "../../projects/api/projectApi";
+import { useGetMyOrganizationsQuery } from "../../organizations/api/organizationApi";
 import TaskCard from "../components/TaskCard";
 import CreateTaskDialog from "../components/CreateTaskDialog";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
@@ -48,12 +49,38 @@ const STAGES = [
 const KanbanPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
   const { data: projectData } = useGetProjectQuery(
     { projectId, organizationId: currentOrganization?._id },
     { skip: !projectId }
   );
+
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId, organizationId: currentOrganization?._id },
+    { skip: !projectId }
+  );
+
+  const { data: orgData } = useGetMyOrganizationsQuery();
+  const orgs = orgData?.data || [];
+  const currentOrgItem = orgs.find((item) => {
+    const orgId = item.organization?._id || item.organization || item._id;
+    return orgId === currentOrganization?._id;
+  });
+
+  const projectMembers = Array.isArray(projectMembersData?.data) ? projectMembersData.data : [];
+  const currentUserMember = projectMembers.find(
+    (m) => (m?.userId?._id || m?.userId || m?._id) === user?._id
+  );
+  const projectRole = currentUserMember?.role;
+  const orgRole = currentOrgItem?.role || currentOrganization?.role || user?.role;
+
+  const isOrgAdminOrOwner =
+    orgRole === "OWNER" ||
+    orgRole === "ADMIN" ||
+    user?.systemRole === "SUPER_ADMIN";
+
+  const canManageProject = isOrgAdminOrOwner || projectRole === "MANAGER";
 
   const {
     data: kanbanData,
@@ -67,7 +94,7 @@ const KanbanPage = () => {
   );
 
   // Real-time Kanban board update socket listeners
-  React.useEffect(() => {
+  useEffect(() => {
     if (projectId) {
       joinRoom("project", projectId);
     }
@@ -100,64 +127,57 @@ const KanbanPage = () => {
   const project = projectData?.data || {};
   const kanban = kanbanData?.data || {};
 
-  const handleStatusChange = React.useCallback(
-    async (task, newStatus) => {
-      try {
-        updateTaskStatus({
-          projectId,
-          taskId: task._id || task,
-          status: newStatus,
-          organizationId: currentOrganization?._id,
-        });
-      } catch (err) {}
-    },
-    [projectId, currentOrganization?._id, updateTaskStatus]
-  );
+  const handleStatusChange = async (task, newStatus) => {
+    try {
+      await updateTaskStatus({
+        projectId,
+        taskId: task._id || task,
+        status: newStatus,
+        organizationId: currentOrganization?._id,
+      }).unwrap();
+    } catch (err) {}
+  };
 
-  const handleArchive = React.useCallback(
-    async (task) => {
-      try {
-        await archiveTask({
-          projectId,
-          taskId: task._id,
-          organizationId: currentOrganization?._id,
-        }).unwrap();
-      } catch (err) {}
-    },
-    [projectId, currentOrganization?._id, archiveTask]
-  );
+  const handleArchive = async (task) => {
+    try {
+      await archiveTask({
+        projectId,
+        taskId: task._id,
+        organizationId: currentOrganization?._id,
+      }).unwrap();
+    } catch (err) {}
+  };
 
-  const handleAddTaskToStage = React.useCallback((stageId) => {
+  const handleAddTaskToStage = (stageId) => {
     setSelectedStage(stageId);
     setIsCreateOpen(true);
-  }, []);
+  };
 
-  // Drag and Drop handlers for Stage Columns - Optimized for 0ms lag
-  const handleDragOverColumn = React.useCallback((e, stageId) => {
+  // Drag and Drop handlers for Stage Columns
+  const handleDragOverColumn = (e, stageId) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setDragOverStage((prev) => (prev !== stageId ? stageId : prev));
-  }, []);
+    if (dragOverStage !== stageId) {
+      setDragOverStage(stageId);
+    }
+  };
 
-  const handleDragLeaveColumn = React.useCallback((e, stageId) => {
+  const handleDragLeaveColumn = (e, stageId) => {
     if (!e.currentTarget.contains(e.relatedTarget)) {
       setDragOverStage(null);
     }
-  }, []);
+  };
 
-  const handleDropTaskOnColumn = React.useCallback(
-    (e, targetStageId) => {
-      e.preventDefault();
-      setDragOverStage(null);
-      const taskId = e.dataTransfer.getData("text/plain");
-      const sourceStatus = e.dataTransfer.getData("sourceStatus");
+  const handleDropTaskOnColumn = async (e, targetStageId) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const taskId = e.dataTransfer.getData("text/plain");
+    const sourceStatus = e.dataTransfer.getData("sourceStatus");
 
-      if (taskId && targetStageId !== sourceStatus) {
-        handleStatusChange({ _id: taskId }, targetStageId);
-      }
-    },
-    [handleStatusChange]
-  );
+    if (taskId && targetStageId !== sourceStatus) {
+      await handleStatusChange({ _id: taskId }, targetStageId);
+    }
+  };
 
   if (isLoading) {
     return <LoadingSpinner label="Loading Kanban board..." py={8} />;
@@ -208,7 +228,7 @@ const KanbanPage = () => {
         </Breadcrumbs>
       </Box>
 
-      {/* Board Header Banner - STRICT HORIZONTAL ROW (Create Task Button on Far Right) */}
+      {/* Board Header Banner */}
       <Paper
         elevation={0}
         sx={{
@@ -243,7 +263,7 @@ const KanbanPage = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+                boxShadow: "0 4px 14px rgba(235, 70, 52, 0.3)",
               }}
             >
               <Columns3 size={22} color="#FFFFFF" />
@@ -259,25 +279,27 @@ const KanbanPage = () => {
             </div>
           </div>
 
-          {/* Right Side: + Create Task Button on same line */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Plus size={18} />}
-            onClick={() => handleAddTaskToStage("TODO")}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              px: 2.5,
-              py: 1.2,
-              borderRadius: 2.5,
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-            }}
-          >
-            Create Task
-          </Button>
+          {/* Right Side: + Create Task Button */}
+          {canManageProject && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Plus size={18} />}
+              onClick={() => handleAddTaskToStage("TODO")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                px: 2.5,
+                py: 1.2,
+                borderRadius: 2.5,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                boxShadow: "0 4px 14px rgba(235, 70, 52, 0.3)",
+              }}
+            >
+              Create Task
+            </Button>
+          )}
         </div>
       </Paper>
 
@@ -299,13 +321,13 @@ const KanbanPage = () => {
                   p: 2,
                   minHeight: 560,
                   borderRadius: 3.5,
-                  bgcolor: isOver ? "#EEF2FF" : stage.bg,
+                  bgcolor: isOver ? "#FFF5F5" : stage.bg,
                   border: isOver ? "2px dashed #eb4634" : "1px solid",
                   borderColor: isOver ? "#eb4634" : "divider",
                   display: "flex",
                   flexDirection: "column",
                   transition: "all 0.2s ease-in-out",
-                  boxShadow: isOver ? "0 10px 30px rgba(79, 70, 229, 0.15)" : "none",
+                  boxShadow: isOver ? "0 10px 30px rgba(235, 70, 52, 0.15)" : "none",
                 }}
               >
                 {/* Stage Column Header */}
@@ -339,24 +361,26 @@ const KanbanPage = () => {
                     />
                   </div>
 
-                  <IconButton
-                    size="small"
-                    onClick={() => handleAddTaskToStage(stage.id)}
-                    title={`Add Task to ${stage.label}`}
-                    sx={{
-                      bgcolor: "#FFFFFF",
-                      border: "1px solid #E2E8F0",
-                      width: 28,
-                      height: 28,
-                      "&:hover": { bgcolor: "#EEF2FF", borderColor: "#eb4634" },
-                    }}
-                  >
-                    <Plus size={16} color="#eb4634" />
-                  </IconButton>
+                  {canManageProject && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleAddTaskToStage(stage.id)}
+                      title={`Add Task to ${stage.label}`}
+                      sx={{
+                        bgcolor: "#FFFFFF",
+                        border: "1px solid #E2E8F0",
+                        width: 28,
+                        height: 28,
+                        "&:hover": { bgcolor: "#EEF2FF", borderColor: "#eb4634" },
+                      }}
+                    >
+                      <Plus size={16} color="#eb4634" />
+                    </IconButton>
+                  )}
                 </div>
 
                 {/* Task Cards Column */}
-                <Box flex={1} display="flex" flexDirection="column" gap={2}>
+                <Box flex={1} display="flex" flexDirection="column">
                   {stageTasks.length === 0 ? (
                     <Box
                       p={3}
@@ -371,7 +395,7 @@ const KanbanPage = () => {
                       <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
                         {isOver ? "Drop task here" : `No tasks in ${stage.label}`}
                       </Typography>
-                      {!isOver && (
+                      {!isOver && canManageProject && (
                         <Button
                           size="small"
                           variant="text"
@@ -384,13 +408,14 @@ const KanbanPage = () => {
                     </Box>
                   ) : (
                     stageTasks.map((task) => (
-                      <TaskCard
-                        key={task._id}
-                        task={task}
-                        draggable
-                        onStatusChange={handleStatusChange}
-                        onArchive={handleArchive}
-                      />
+                      <div key={task._id} style={{ marginBottom: "16px" }}>
+                        <TaskCard
+                          task={task}
+                          draggable
+                          onStatusChange={handleStatusChange}
+                          onArchive={canManageProject ? handleArchive : undefined}
+                        />
+                      </div>
                     ))
                   )}
                 </Box>

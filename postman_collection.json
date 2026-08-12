@@ -1,0 +1,944 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-4a5b-9c8d-1e2f3a4b5c6d",
+    "name": "Sunday Project Management SaaS API",
+    "description": "Postman Collection v2.1.0 for testing all Sunday Project Management SaaS REST APIs with Bearer token authorization and automated variable scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "commentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "memberUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amitesh Patel\",\n  \"email\": \"amitesh@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"amitesh@example.com\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data.accessToken) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Search Registered Users (Autocomplete)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/users/search?search=rahul",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "users", "search"],
+              "query": [{ "key": "search", "value": "rahul" }]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Organizations",
+      "item": [
+        {
+          "name": "Create Organization",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amitesh Technologies\",\n  \"description\": \"Enterprise Project Management Workspace\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data._id) {",
+                  "    pm.collectionVariables.set('organizationId', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Organizations",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            }
+          }
+        },
+        {
+          "name": "Get Single Organization",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amitesh Technologies Pvt Ltd\",\n  \"description\": \"Updated project management workspace\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Organization Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rahul@example.com\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Get Organization Members",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Update Member Role in Organization",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}/members/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}", "members", "{{memberUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "Remove Member from Organization",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/{{organizationId}}/members/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "{{organizationId}}", "members", "{{memberUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"E-Commerce Platform\",\n  \"description\": \"Build the new enterprise e-commerce web platform\",\n  \"status\": \"ACTIVE\",\n  \"priority\": \"HIGH\",\n  \"startDate\": \"2026-08-15\",\n  \"dueDate\": \"2026-10-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data._id) {",
+                  "    pm.collectionVariables.set('projectId', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Projects (Filtered)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects?page=1&limit=10&status=ACTIVE&priority=HIGH",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "ACTIVE" },
+                { "key": "priority", "value": "HIGH" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"E-Commerce Platform V2\",\n  \"description\": \"Updated platform features\",\n  \"status\": \"ACTIVE\",\n  \"priority\": \"CRITICAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Archive Project",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Project Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{memberUserId}}\",\n  \"role\": \"MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Get Project Members",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "members"]
+            }
+          }
+        },
+        {
+          "name": "Update Project Member Role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/members/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "members", "{{memberUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "Remove Project Member",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/members/{{memberUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "members", "{{memberUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Tasks & Kanban",
+      "item": [
+        {
+          "name": "Create Task",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": \"{{projectId}}\",\n  \"title\": \"Implement User Authentication\",\n  \"description\": \"Implement JWT based authentication and role validation\",\n  \"status\": \"TODO\",\n  \"priority\": \"HIGH\",\n  \"dueDate\": \"2026-08-25\",\n  \"labels\": [\"backend\", \"security\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data._id) {",
+                  "    pm.collectionVariables.set('taskId', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Tasks (Filtered & Paginated)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks?projectId={{projectId}}&page=1&limit=10&status=TODO&priority=HIGH",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"],
+              "query": [
+                { "key": "projectId", "value": "{{projectId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "TODO" },
+                { "key": "priority", "value": "HIGH" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Kanban Board Stage Columns",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/kanban?projectId={{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "kanban"],
+              "query": [{ "key": "projectId", "value": "{{projectId}}" }]
+            }
+          }
+        },
+        {
+          "name": "Get Single Task",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Implement Complete Authentication System\",\n  \"description\": \"Updated auth details\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"CRITICAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Status (Kanban Move)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_REVIEW\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Priority",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"CRITICAL\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/priority",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "priority"]
+            }
+          }
+        },
+        {
+          "name": "Assign Task",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigneeId\": \"{{memberUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/assignee",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "assignee"]
+            }
+          }
+        },
+        {
+          "name": "Archive Task",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Comments",
+      "item": [
+        {
+          "name": "Add Task Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Completed JWT authentication middleware implementation.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/tasks/{{taskId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "tasks", "{{taskId}}", "comments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data._id) {",
+                  "    pm.collectionVariables.set('commentId', jsonData.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Task Comments",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/tasks/{{taskId}}/comments",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "tasks", "{{taskId}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Edit Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated comment text content.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/tasks/{{taskId}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "tasks", "{{taskId}}", "comments", "{{commentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/tasks/{{taskId}}/comments/{{commentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "tasks", "{{taskId}}", "comments", "{{commentId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Activity History",
+      "item": [
+        {
+          "name": "Get Project Activity Timeline",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}/activity?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", "{{projectId}}", "activity"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Notifications",
+      "item": [
+        {
+          "name": "Get User Notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Notification Count",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "unread-count"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

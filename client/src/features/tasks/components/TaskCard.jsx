@@ -1,6 +1,7 @@
 // src/features/tasks/components/TaskCard.jsx
 
 import React from "react";
+import { useSelector } from "react-redux";
 import {
   Card,
   CardContent,
@@ -16,14 +17,20 @@ import {
 import { Calendar, User, MoreVertical, Edit3, Trash2, CheckCircle } from "lucide-react";
 import PriorityChip from "../../../components/common/PriorityChip";
 import { formatDate } from "../../../utils/formatDate";
-
 import { useNavigate } from "react-router-dom";
 
 const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, onDragStart, onDragEnd }) => {
   const navigate = useNavigate();
+  const { user, currentOrganization } = useSelector((state) => state.auth);
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const open = Boolean(anchorEl);
+
+  // Show Archive Task for all roles EXCEPT when role is strictly MEMBER
+  const orgRole = currentOrganization?.role || user?.role;
+  const isMemberRole = orgRole === "MEMBER" && user?.systemRole !== "SUPER_ADMIN";
+  const canArchive = !isMemberRole;
 
   const handleCardClick = () => {
     if (isDragging) return;
@@ -37,10 +44,14 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
 
   const handleMenuClick = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     setAnchorEl(e.currentTarget);
   };
 
-  const handleClose = () => {
+  const handleClose = (e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
     setAnchorEl(null);
   };
 
@@ -100,7 +111,7 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
       }}
     >
       <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-        {/* Top Header Row: Priority Chip on Left, 3-dots Menu Button on Top Right Corner */}
+        {/* Top Header Row */}
         <div
           style={{
             display: "flex",
@@ -161,7 +172,7 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
           </Box>
         )}
 
-        {/* Bottom Footer Info: Avatar + Assignee Name on Left, Due Date on Right (Strict Horizontal Row) */}
+        {/* Bottom Footer Info */}
         <div
           style={{
             display: "flex",
@@ -214,11 +225,17 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
       </CardContent>
 
       {/* Actions Menu */}
-      <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        onClick={(e) => e.stopPropagation()}
+      >
         {onEdit && (
           <MenuItem
-            onClick={() => {
-              handleClose();
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose(e);
               onEdit(task);
             }}
           >
@@ -231,8 +248,9 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
 
         {onStatusChange && (
           <MenuItem
-            onClick={() => {
-              handleClose();
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose(e);
               const nextStatus =
                 task.status === "TODO"
                   ? "IN_PROGRESS"
@@ -251,10 +269,11 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
           </MenuItem>
         )}
 
-        {onArchive && (
+        {onArchive && canArchive && (
           <MenuItem
-            onClick={() => {
-              handleClose();
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose(e);
               onArchive(task);
             }}
             sx={{ color: "error.main" }}
@@ -270,4 +289,4 @@ const TaskCard = ({ task, onEdit, onArchive, onStatusChange, draggable = false, 
   );
 };
 
-export default React.memo(TaskCard);
+export default TaskCard;

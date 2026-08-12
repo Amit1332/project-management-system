@@ -115,8 +115,28 @@ const getCurrentUser = async (userId) => {
   return user;
 };
 
+const searchUsers = async (searchQuery) => {
+  const query = searchQuery ? searchQuery.trim() : "";
+  const filter = { isActive: true };
+
+  if (query) {
+    filter.$or = [
+      { name: { $regex: query, $options: "i" } },
+      { email: { $regex: query, $options: "i" } },
+    ];
+  }
+
+  const users = await User.find(filter)
+    .select("_id name email avatar")
+    .limit(20)
+    .lean();
+
+  return users;
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  searchUsers,
 };

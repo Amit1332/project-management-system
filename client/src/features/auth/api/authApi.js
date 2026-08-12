@@ -29,6 +29,10 @@ export const authApi = createApi({
       providesTags: ["User"],
     }),
 
+    searchUsers: builder.query({
+      query: (search = "") => `/auth/users/search?search=${encodeURIComponent(search)}`,
+    }),
+
     logout: builder.mutation({
       query: () => ({
         url: "/auth/logout",
@@ -42,5 +46,6 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useGetMeQuery,
+  useSearchUsersQuery,
   useLogoutMutation,
 } = authApi;

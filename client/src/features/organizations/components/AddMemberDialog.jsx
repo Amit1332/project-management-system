@@ -13,13 +13,20 @@ import {
   MenuItem,
   CircularProgress,
   Autocomplete,
+  Avatar,
+  Typography,
 } from "@mui/material";
 import { UserPlus } from "lucide-react";
 import { useAddMemberMutation } from "../api/organizationApi";
+import { useSearchUsersQuery } from "../../auth/api/authApi";
 import { formatError } from "../../../utils/formatError";
 
 const AddMemberDialog = ({ open, onClose, organizationId }) => {
   const [addMember, { isLoading }] = useAddMemberMutation();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: searchData, isLoading: isSearching } = useSearchUsersQuery(searchTerm);
+  const options = searchData?.data || [];
 
   const [formData, setFormData] = useState({
     email: "",
@@ -40,7 +47,7 @@ const AddMemberDialog = ({ open, onClose, organizationId }) => {
     if (!organizationId) return;
 
     if (!formData.email.trim()) {
-      setErrorMessage("User email address is required.");
+      setErrorMessage("Please select or enter a registered user email address.");
       return;
     }
 
@@ -53,6 +60,7 @@ const AddMemberDialog = ({ open, onClose, organizationId }) => {
 
       if (response.success) {
         setFormData({ email: "", role: "MEMBER" });
+        setSearchTerm("");
         onClose();
       }
     } catch (err) {
@@ -74,26 +82,85 @@ const AddMemberDialog = ({ open, onClose, organizationId }) => {
           )}
 
           <Box display="flex" flexDirection="column">
+            {/* Search Dropdown Select Field for Existing DB Users */}
             <Autocomplete
               freeSolo
-              options={[]}
-              value={formData.email}
+              options={options}
+              getOptionLabel={(option) => {
+                if (typeof option === "string") return option;
+                return `${option.name} (${option.email})`;
+              }}
+              isOptionEqualToValue={(option, value) => {
+                if (typeof value === "string") return option.email === value;
+                return option._id === value?._id || option.email === value?.email;
+              }}
               onInputChange={(event, newInputValue) => {
+                setSearchTerm(newInputValue || "");
                 setFormData((prev) => ({ ...prev, email: newInputValue || "" }));
                 if (errorMessage) setErrorMessage("");
               }}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  const selectedEmail = typeof newValue === "string" ? newValue : newValue.email;
+                  setFormData((prev) => ({ ...prev, email: selectedEmail }));
+                }
+              }}
+              renderOption={(props, option) => (
+                <Box
+                  component="li"
+                  {...props}
+                  key={option._id}
+                  sx={{
+                    py: 1,
+                    px: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                  }}
+                >
+                  <Avatar
+                    src={option.avatar || undefined}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      bgcolor: "#eb4634",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {option.name ? option.name[0].toUpperCase() : "U"}
+                  </Avatar>
+                  <Box minWidth={0}>
+                    <Typography variant="body2" fontWeight={700} color="text.primary" noWrap>
+                      {option.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap display="block">
+                      {option.email}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="User Email Address"
-                  name="email"
-                  placeholder="Search or enter registered user email..."
-                  helperText="Search or type a registered user email address"
+                  label="Search Registered User"
+                  placeholder="Type name or email to search existing users..."
+                  helperText="Select an existing registered user from dropdown or enter an email address"
                   required
                   fullWidth
                   autoFocus
                   size="medium"
                   sx={{ mb: 3 }}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {isSearching ? <CircularProgress color="inherit" size={18} /> : null}
+                        {params.InputProps?.endAdornment}
+                      </>
+                    ),
+                  }}
                 />
               )}
             />
@@ -135,7 +202,7 @@ const AddMemberDialog = ({ open, onClose, organizationId }) => {
               px: 3,
               py: 1,
               borderRadius: 2.5,
-              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+              boxShadow: "0 4px 14px rgba(235, 70, 52, 0.3)",
             }}
           >
             {isLoading ? "Adding..." : "Add Member"}

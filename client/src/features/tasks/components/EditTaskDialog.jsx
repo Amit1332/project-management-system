@@ -14,6 +14,7 @@ import {
   MenuItem,
   CircularProgress,
   Grid,
+  Tooltip,
 } from "@mui/material";
 import { Edit3 } from "lucide-react";
 import { useUpdateTaskMutation } from "../api/taskApi";
@@ -86,18 +87,24 @@ const EditTaskDialog = ({ open, onClose, projectId, task, canManageTask = true }
       : [];
 
     try {
-      const response = await updateTask({
+      const payload = {
         projectId,
         taskId: task._id,
         organizationId: currentOrganization?._id,
         title: formData.title.trim(),
         description: formData.description,
         status: formData.status,
-        priority: formData.priority,
-        assigneeId: formData.assigneeId || null,
-        dueDate: formData.dueDate || null,
         labels,
-      }).unwrap();
+      };
+
+      // Only send Priority, Assignee & Due Date if user has manager/admin permissions
+      if (canManageTask) {
+        payload.priority = formData.priority;
+        payload.assigneeId = formData.assigneeId || null;
+        payload.dueDate = formData.dueDate || null;
+      }
+
+      const response = await updateTask(payload).unwrap();
 
       if (response.success) {
         onClose();
@@ -116,7 +123,7 @@ const EditTaskDialog = ({ open, onClose, projectId, task, canManageTask = true }
         <DialogContent dividers sx={{ p: 3, py: 3.5 }}>
           {!canManageTask && (
             <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-              You have Member permissions. Priority and Assignee modifications require Manager or Admin permissions.
+              As a Member, you can edit Title, Description, Status, and Labels. Assignee, Priority, and Due Date modifications require Manager or Admin permissions.
             </Alert>
           )}
 
@@ -166,56 +173,63 @@ const EditTaskDialog = ({ open, onClose, projectId, task, canManageTask = true }
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  select
-                  label="Priority"
-                  name="priority"
-                  disabled={!canManageTask}
-                  value={formData.priority}
-                  onChange={handleChange}
-                  fullWidth
-                >
-                  <MenuItem value="LOW">LOW</MenuItem>
-                  <MenuItem value="MEDIUM">MEDIUM</MenuItem>
-                  <MenuItem value="HIGH">HIGH</MenuItem>
-                  <MenuItem value="CRITICAL">CRITICAL</MenuItem>
-                </TextField>
+                <Tooltip title={!canManageTask ? "Only Managers & Admins can change priority" : ""}>
+                  <TextField
+                    select
+                    label="Priority"
+                    name="priority"
+                    disabled={!canManageTask}
+                    value={formData.priority}
+                    onChange={handleChange}
+                    fullWidth
+                  >
+                    <MenuItem value="LOW">LOW</MenuItem>
+                    <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+                    <MenuItem value="HIGH">HIGH</MenuItem>
+                    <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+                  </TextField>
+                </Tooltip>
               </Grid>
             </Grid>
 
             <Grid container spacing={2.5} sx={{ mb: 3 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  select
-                  label="Assignee"
-                  name="assigneeId"
-                  disabled={!canManageTask}
-                  value={formData.assigneeId}
-                  onChange={handleChange}
-                  fullWidth
-                >
-                  <MenuItem value="">Unassigned</MenuItem>
-                  {members.map((m) => {
-                    const u = m.userId || {};
-                    return (
-                      <MenuItem key={u._id} value={u._id}>
-                        {u.name}
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
+                <Tooltip title={!canManageTask ? "Only Managers & Admins can reassign tasks" : ""}>
+                  <TextField
+                    select
+                    label="Assignee"
+                    name="assigneeId"
+                    disabled={!canManageTask}
+                    value={formData.assigneeId}
+                    onChange={handleChange}
+                    fullWidth
+                  >
+                    <MenuItem value="">Unassigned</MenuItem>
+                    {members.map((m) => {
+                      const u = m.userId || {};
+                      return (
+                        <MenuItem key={u._id} value={u._id}>
+                          {u.name}
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
+                </Tooltip>
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  label="Due Date"
-                  name="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={handleChange}
-                  fullWidth
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
+                <Tooltip title={!canManageTask ? "Only Managers & Admins can change due date" : ""}>
+                  <TextField
+                    label="Due Date"
+                    name="dueDate"
+                    type="date"
+                    disabled={!canManageTask}
+                    value={formData.dueDate}
+                    onChange={handleChange}
+                    fullWidth
+                    slotProps={{ inputLabel: { shrink: true } }}
+                  />
+                </Tooltip>
               </Grid>
             </Grid>
 

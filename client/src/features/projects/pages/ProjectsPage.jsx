@@ -13,6 +13,7 @@ import {
 import { FolderKanban, Plus, RotateCcw } from "lucide-react";
 
 import { useGetProjectsQuery } from "../api/projectApi";
+import { useGetMyOrganizationsQuery } from "../../organizations/api/organizationApi";
 import ProjectCard from "../components/ProjectCard";
 import CreateProjectDialog from "../components/CreateProjectDialog";
 import PageHeader from "../../../components/common/PageHeader";
@@ -24,13 +25,26 @@ import Pagination from "../../../components/common/Pagination";
 import { formatError } from "../../../utils/formatError";
 
 const ProjectsPage = () => {
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Fetch organization memberships to dynamically look up active org role
+  const { data: orgData } = useGetMyOrganizationsQuery();
+  const orgs = orgData?.data || [];
+
+  const currentOrgItem = orgs.find((item) => {
+    const orgId = item.organization?._id || item.organization || item._id;
+    return orgId === currentOrganization?._id;
+  });
+
+  const userOrgRole = currentOrgItem?.role || currentOrganization?.role || user?.role;
+  const isMemberRole = userOrgRole === "MEMBER" && user?.systemRole !== "SUPER_ADMIN";
+  const canCreateProject = !isMemberRole;
 
   const hasActiveFilters = Boolean(search || statusFilter || priorityFilter);
 
@@ -85,12 +99,12 @@ const ProjectsPage = () => {
       <PageHeader
         title="Projects"
         subtitle={`Projects for ${currentOrganization.name}`}
-        actionLabel="Create Project"
-        actionIcon={Plus}
-        onAction={() => setIsCreateOpen(true)}
+        actionLabel={canCreateProject ? "Create Project" : undefined}
+        actionIcon={canCreateProject ? Plus : undefined}
+        onAction={canCreateProject ? () => setIsCreateOpen(true) : undefined}
       />
 
-      {/* Filter & Search Bar */}
+      {/* Filter & Search Bar - Standardized Medium Size Controls */}
       <Paper
         elevation={0}
         sx={{
@@ -102,7 +116,7 @@ const ProjectsPage = () => {
           bgcolor: "background.paper",
         }}
       >
-        <Grid container spacing={2} alignItems="center">
+        <Grid container spacing={2.5} alignItems="center">
           <Grid size={{ xs: 12, md: hasActiveFilters ? 4 : 5 }}>
             <SearchInput
               value={search}
@@ -165,7 +179,7 @@ const ProjectsPage = () => {
                 onClick={handleResetFilters}
                 startIcon={<RotateCcw size={16} />}
                 fullWidth
-                sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, py: 1.1 }}
+                sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, py: 1.15 }}
               >
                 Reset
               </Button>
@@ -192,8 +206,8 @@ const ProjectsPage = () => {
               ? "Try adjusting your search filters to find projects."
               : "Get started by creating your first project for this organization."
           }
-          actionLabel="Create Project"
-          onAction={() => setIsCreateOpen(true)}
+          actionLabel={canCreateProject ? "Create Project" : undefined}
+          onAction={canCreateProject ? () => setIsCreateOpen(true) : undefined}
         />
       ) : (
         <>
@@ -216,10 +230,12 @@ const ProjectsPage = () => {
       )}
 
       {/* Modal */}
-      <CreateProjectDialog
-        open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-      />
+      {canCreateProject && (
+        <CreateProjectDialog
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+        />
+      )}
     </Box>
   );
 };

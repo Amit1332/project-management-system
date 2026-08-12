@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { CheckSquare, Plus, RotateCcw } from "lucide-react";
 
-import { useGetProjectsQuery } from "../../projects/api/projectApi";
+import { useGetProjectsQuery, useGetProjectMembersQuery } from "../../projects/api/projectApi";
 import { useGetTasksQuery, useUpdateTaskStatusMutation, useArchiveTaskMutation } from "../api/taskApi";
 import TaskCard from "../components/TaskCard";
 import CreateTaskDialog from "../components/CreateTaskDialog";
@@ -27,7 +27,7 @@ import { formatError } from "../../../utils/formatError";
 
 const TasksPage = () => {
   const navigate = useNavigate();
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [page, setPage] = useState(1);
@@ -53,6 +53,24 @@ const TasksPage = () => {
 
   const projects = projectsData?.data || [];
   const activeProjectId = selectedProjectId || (projects.length > 0 ? projects[0]._id : "");
+
+  // Fetch project members to evaluate role permissions
+  const { data: projectMembersData } = useGetProjectMembersQuery(
+    { projectId: activeProjectId, organizationId: currentOrganization?._id },
+    { skip: !activeProjectId }
+  );
+
+  const projectMembers = Array.isArray(projectMembersData?.data) ? projectMembersData.data : [];
+  const currentUserMember = projectMembers.find(
+    (m) => (m?.userId?._id || m?.userId || m?._id) === user?._id
+  );
+  const projectRole = currentUserMember?.role;
+  const orgRole = currentOrganization?.role || user?.role;
+  const canCreateTask =
+    orgRole === "OWNER" ||
+    orgRole === "ADMIN" ||
+    projectRole === "MANAGER" ||
+    user?.systemRole === "SUPER_ADMIN";
 
   const {
     data: tasksData,
@@ -120,9 +138,9 @@ const TasksPage = () => {
       <PageHeader
         title="Tasks & Deliverables"
         subtitle={`Task workspace for ${currentOrganization.name}`}
-        actionLabel="Create Task"
-        actionIcon={Plus}
-        onAction={() => setIsCreateOpen(true)}
+        actionLabel={canCreateTask ? "Create Task" : undefined}
+        actionIcon={canCreateTask ? Plus : undefined}
+        onAction={canCreateTask ? () => setIsCreateOpen(true) : undefined}
       />
 
       {/* Project Selector & Search Filter Bar */}
@@ -260,8 +278,8 @@ const TasksPage = () => {
               ? "Try adjusting your search query or status filter."
               : "Get started by creating your first task for this project."
           }
-          actionLabel="Create Task"
-          onAction={() => setIsCreateOpen(true)}
+          actionLabel={canCreateTask ? "Create Task" : undefined}
+          onAction={canCreateTask ? () => setIsCreateOpen(true) : undefined}
         />
       ) : (
         <>
@@ -271,7 +289,7 @@ const TasksPage = () => {
                 <TaskCard
                   task={task}
                   onStatusChange={handleStatusChange}
-                  onArchive={handleArchiveTask}
+                  onArchive={canCreateTask ? handleArchiveTask : undefined}
                 />
               </Grid>
             ))}
@@ -288,7 +306,7 @@ const TasksPage = () => {
       )}
 
       {/* Modal */}
-      {activeProjectId && (
+      {activeProjectId && canCreateTask && (
         <CreateTaskDialog
           open={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}

@@ -1,31 +1,28 @@
 // src/features/tasks/pages/TaskDetailsPage.jsx
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   Box,
   Paper,
   Typography,
-  Button,
   Grid,
-  Divider,
+  Button,
   Breadcrumbs,
   Link,
-  Chip,
+  Divider,
   MenuItem,
   TextField,
-  Tabs,
-  Tab,
-  Tooltip,
+  Chip,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import {
   CheckSquare,
-  Columns3,
   ArrowLeft,
-  MessageSquare,
-  Activity,
+  Calendar,
+  Columns3,
   Edit3,
 } from "lucide-react";
 
@@ -35,26 +32,24 @@ import {
   useUpdateTaskPriorityMutation,
   useUpdateTaskAssigneeMutation,
 } from "../api/taskApi";
-import { useGetMembersQuery } from "../../organizations/api/organizationApi";
 import { useGetProjectMembersQuery } from "../../projects/api/projectApi";
+import { useGetMyOrganizationsQuery } from "../../organizations/api/organizationApi";
 import TaskCommentsSection from "../../comments/components/TaskCommentsSection";
-import ActivityTimeline from "../../activity/components/ActivityTimeline";
 import EditTaskDialog from "../components/EditTaskDialog";
 import StatusChip from "../../../components/common/StatusChip";
 import PriorityChip from "../../../components/common/PriorityChip";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
+import { formatDate } from "../../../utils/formatDate";
 import { formatError } from "../../../utils/formatError";
 
 import { joinRoom, leaveRoom, onSocketEvent } from "../../../services/socket";
 
 const TaskDetailsPage = () => {
-  const { projectId, taskId } = useParams();
+  const { taskId, projectId: routeProjectId } = useParams();
   const navigate = useNavigate();
-  const currentUser = useSelector((state) => state.auth.user);
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
-  const [activeTab, setActiveTab] = useState(0);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const {
@@ -64,110 +59,101 @@ const TaskDetailsPage = () => {
     error,
     refetch,
   } = useGetTaskQuery(
-    { projectId, taskId, organizationId: currentOrganization?._id },
-    { skip: !projectId || !taskId }
+    { taskId, organizationId: currentOrganization?._id, projectId: routeProjectId },
+    { skip: !taskId }
   );
 
-  // Real-time Socket.io listeners using bulletproof onSocketEvent
-  React.useEffect(() => {
-    if (taskId) {
-      joinRoom("task", taskId);
-    }
-    if (projectId) {
-      joinRoom("project", projectId);
-    }
+  const task = taskData?.data || {};
+  const projectId = task.projectId?._id || task.projectId || routeProjectId;
 
-    const handleSocketUpdate = () => {
+  // Real-time socket updates for Task details & status changes
+  useEffect(() => {
+    if (projectId) joinRoom("project", projectId);
+    if (taskId) joinRoom("task", taskId);
+
+    const handleTaskUpdate = () => {
       refetch();
     };
 
     const unsubs = [
-      onSocketEvent("comment:created", handleSocketUpdate),
-      onSocketEvent("task:updated", handleSocketUpdate),
-      onSocketEvent("task:status_changed", handleSocketUpdate),
-      onSocketEvent("task:priority_changed", handleSocketUpdate),
-      onSocketEvent("task:assigned", handleSocketUpdate),
-      onSocketEvent("activity:created", handleSocketUpdate),
+      onSocketEvent("task:status_changed", handleTaskUpdate),
+      onSocketEvent("task:updated", handleTaskUpdate),
+      onSocketEvent("task:priority_changed", handleTaskUpdate),
+      onSocketEvent("task:assignee_changed", handleTaskUpdate),
     ];
 
     return () => {
       unsubs.forEach((unsub) => unsub && unsub());
-      if (taskId) leaveRoom("task", taskId);
       if (projectId) leaveRoom("project", projectId);
+      if (taskId) leaveRoom("task", taskId);
     };
-  }, [taskId, projectId, refetch]);
-
-  const { data: membersData } = useGetMembersQuery(currentOrganization?._id, {
-    skip: !currentOrganization?._id,
-  });
+  }, [projectId, taskId, refetch]);
 
   const { data: projectMembersData } = useGetProjectMembersQuery(
     { projectId, organizationId: currentOrganization?._id },
     { skip: !projectId }
   );
 
-  const [updateTaskStatus] = useUpdateTaskStatusMutation();
-  const [updateTaskPriority] = useUpdateTaskPriorityMutation();
-  const [updateTaskAssignee] = useUpdateTaskAssigneeMutation();
+  const { data: orgData } = useGetMyOrganizationsQuery();
+  const orgs = orgData?.data || [];
+  const currentOrgItem = orgs.find((item) => {
+    const orgId = item.organization?._id || item.organization || item._id;
+    return orgId === currentOrganization?._id;
+  });
 
-  const task = taskData?.data || {};
-  const members = membersData?.data || [];
   const projectMembers = projectMembersData?.data || [];
-  const assignee = task.assigneeId || task.assignee || {};
 
-  // Permission evaluation memoized to prevent recalculation on every render
-  const canManageTask = useMemo(() => {
-    const myOrgMember = members.find(
-      (m) => (m.userId?._id || m.userId) === currentUser?._id
-    );
-    const myProjectMember = projectMembers.find(
-      (m) => (m.userId?._id || m.userId) === currentUser?._id
-    );
+  // Determine user role permissions for Priority, Assignee & Edit Task
+  const userMember = projectMembers.find(
+    (m) => (m.userId?._id || m.userId || m._id) === user?._id
+  );
+  const projectRole = userMember?.role;
+  const orgRole = currentOrgItem?.role || currentOrganization?.role || user?.role;
 
-    const isOrgAdminOrOwner =
-      myOrgMember?.role === "OWNER" ||
-      myOrgMember?.role === "ADMIN" ||
-      currentUser?.role === "OWNER" ||
-      currentUser?.role === "ADMIN";
+  const isOrgAdminOrOwner =
+    orgRole === "OWNER" ||
+    orgRole === "ADMIN" ||
+    user?.systemRole === "SUPER_ADMIN";
 
-    const isProjectManager = myProjectMember?.role === "MANAGER";
-    return Boolean(isOrgAdminOrOwner || isProjectManager);
-  }, [members, projectMembers, currentUser]);
+  const canManageTask = isOrgAdminOrOwner || projectRole === "MANAGER";
 
-  const handleStatusChange = async (e) => {
+  const [updateTaskStatus, { isLoading: isStatusUpdating }] = useUpdateTaskStatusMutation();
+  const [updateTaskPriority, { isLoading: isPriorityUpdating }] = useUpdateTaskPriorityMutation();
+  const [updateTaskAssignee, { isLoading: isAssigneeUpdating }] = useUpdateTaskAssigneeMutation();
+
+  const handleStatusChange = async (newStatus) => {
     try {
       await updateTaskStatus({
-        projectId,
         taskId,
-        status: e.target.value,
+        status: newStatus,
         organizationId: currentOrganization?._id,
+        projectId,
       }).unwrap();
-      refetch();
-    } catch (err) {}
+    } catch (e) {}
   };
 
-  const handlePriorityChange = async (e) => {
+  const handlePriorityChange = async (newPriority) => {
+    if (!canManageTask) return;
     try {
       await updateTaskPriority({
-        projectId,
         taskId,
-        priority: e.target.value,
+        priority: newPriority,
         organizationId: currentOrganization?._id,
+        projectId,
       }).unwrap();
-      refetch();
-    } catch (err) {}
+    } catch (e) {}
   };
 
-  const handleAssigneeChange = async (e) => {
+  const handleAssigneeChange = async (newAssigneeId) => {
+    if (!canManageTask) return;
     try {
       await updateTaskAssignee({
-        projectId,
         taskId,
-        assigneeId: e.target.value || null,
+        assigneeId: newAssigneeId || null,
         organizationId: currentOrganization?._id,
+        projectId,
       }).unwrap();
-      refetch();
-    } catch (err) {}
+    } catch (e) {}
   };
 
   if (isLoading) {
@@ -232,7 +218,7 @@ const TaskDetailsPage = () => {
           position: "relative",
         }}
       >
-        {/* Top-Right Absolute Positioned Action Icon Buttons (Mobile & Desktop) */}
+        {/* Action Buttons Top-Right */}
         <Box
           sx={{
             position: "absolute",
@@ -263,28 +249,28 @@ const TaskDetailsPage = () => {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title={!canManageTask ? "Only Managers & Admins can edit task details" : "Edit Task"}>
-            <span>
+          {/* Hide Edit Task button for regular MEMBER role */}
+          {canManageTask && (
+            <Tooltip title="Edit Task">
               <IconButton
-                disabled={!canManageTask}
                 onClick={() => setIsEditOpen(true)}
                 sx={{
                   bgcolor: "#eb4634",
                   color: "#FFFFFF",
-                  "&:hover": { bgcolor: "#4338CA" },
-                  "&.Mui-disabled": { bgcolor: "#E2E8F0", color: "#94A3B8" },
+                  "&:hover": { bgcolor: "#C23525" },
                   borderRadius: 2,
                   p: 0.8,
+                  boxShadow: "0 4px 12px rgba(235, 70, 52, 0.3)",
                 }}
               >
                 <Edit3 size={18} color="#FFFFFF" />
               </IconButton>
-            </span>
-          </Tooltip>
+            </Tooltip>
+          )}
         </Box>
 
-        {/* Left Side Main Content: Icon & Title in Row */}
-        <Box display="flex" alignItems="center" gap={2} mb={2} pr={{ xs: "95px", md: "450px" }}>
+        {/* Task Icon + Title Row */}
+        <Box display="flex" alignItems="center" gap={2} mb={2.5} pr={{ xs: "95px", md: "450px" }}>
           <Box
             sx={{
               width: 44,
@@ -302,34 +288,35 @@ const TaskDetailsPage = () => {
             <CheckSquare size={22} color="#FFFFFF" />
           </Box>
 
-          <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em" noWrap>
+          <Typography variant="h4" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
             {task.title}
           </Typography>
         </Box>
 
         {/* Task Description & Labels */}
         {(task.description || (task.labels && task.labels.length > 0)) && (
-          <Box pr={{ xs: 0, md: "150px" }} mt={1}>
+          <Box pr={{ xs: 0, md: "150px" }} mt={2} mb={3}>
             {task.description && (
-              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+              <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6, mb: 2, fontSize: "0.95rem" }}>
                 {task.description}
               </Typography>
             )}
 
             {task.labels && task.labels.length > 0 && (
-              <Box display="flex" alignItems="center" gap={0.8} flexWrap="wrap" mt={1}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mt={2}>
                 {task.labels.map((label, idx) => (
                   <Chip
                     key={idx}
                     label={label}
                     size="small"
                     sx={{
-                      height: 22,
-                      fontSize: "0.72rem",
+                      height: 24,
+                      fontSize: "0.75rem",
                       fontWeight: 700,
                       bgcolor: "#F1F5F9",
                       color: "#475569",
                       borderRadius: 1.5,
+                      px: 0.5,
                     }}
                   />
                 ))}
@@ -338,111 +325,114 @@ const TaskDetailsPage = () => {
           </Box>
         )}
 
-        <Divider sx={{ my: 2.5 }} />
+        <Divider sx={{ my: 3 }} />
 
-        {/* Bottom Section: Select Fields (Status, Priority, Assignee) */}
-        <Box display="flex" alignItems="center" flexWrap="wrap">
-          {/* Status Select */}
-          <TextField
-            select
-            size="small"
-            label="Status"
-            value={task.status || "TODO"}
-            onChange={handleStatusChange}
-            sx={{
-              minWidth: 130,
-              mx: 1.5,
-              my: 0.5,
-              "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
-              "& .MuiInputLabel-root": { fontSize: "0.78rem" },
-            }}
-          >
-            <MenuItem value="TODO">TODO</MenuItem>
-            <MenuItem value="IN_PROGRESS">IN_PROGRESS</MenuItem>
-            <MenuItem value="IN_REVIEW">IN_REVIEW</MenuItem>
-            <MenuItem value="DONE">DONE</MenuItem>
-          </TextField>
-
-          {/* Priority Select */}
-          <Tooltip title={!canManageTask ? "Only Managers & Admins can change priority" : ""}>
+        {/* Controls Bar: Status Select, Priority Select, Assignee Select */}
+        <Grid container spacing={2.5} alignItems="center">
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
             <TextField
               select
-              size="small"
-              disabled={!canManageTask}
-              label="Priority"
-              value={task.priority || "MEDIUM"}
-              onChange={handlePriorityChange}
-              sx={{
-                minWidth: 130,
-                mx: 1.5,
-                my: 0.5,
-                "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
-                "& .MuiInputLabel-root": { fontSize: "0.78rem" },
-              }}
+              size="medium"
+              fullWidth
+              label="Status"
+              value={task.status || "TODO"}
+              disabled={isStatusUpdating}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5 } }}
             >
-              <MenuItem value="LOW">LOW</MenuItem>
-              <MenuItem value="MEDIUM">MEDIUM</MenuItem>
-              <MenuItem value="HIGH">HIGH</MenuItem>
-              <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+              <MenuItem value="TODO">TODO</MenuItem>
+              <MenuItem value="IN_PROGRESS">IN_PROGRESS</MenuItem>
+              <MenuItem value="IN_REVIEW">IN_REVIEW</MenuItem>
+              <MenuItem value="DONE">DONE</MenuItem>
             </TextField>
-          </Tooltip>
+          </Grid>
 
-          {/* Assignee Select */}
-          <Tooltip title={!canManageTask ? "Only Managers & Admins can assign tasks" : ""}>
-            <TextField
-              select
-              size="small"
-              disabled={!canManageTask}
-              label="Assignee"
-              value={assignee._id || ""}
-              onChange={handleAssigneeChange}
-              sx={{
-                minWidth: 140,
-                mx: 1.5,
-                my: 0.5,
-                "& .MuiInputBase-root": { fontSize: "0.82rem", height: 36 },
-                "& .MuiInputLabel-root": { fontSize: "0.78rem" },
-              }}
-            >
-              <MenuItem value="">Unassigned</MenuItem>
-              {(projectId && projectMembers.length > 0 ? projectMembers : members).map((m) => {
-                const u = m.userId || m;
-                return (
-                  <MenuItem key={u._id} value={u._id}>
-                    {u.name}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-          </Tooltip>
-        </Box>
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
+            <Tooltip title={!canManageTask ? "Only Managers & Admins can change priority" : ""}>
+              <TextField
+                select
+                size="medium"
+                fullWidth
+                label="Priority"
+                value={task.priority || "MEDIUM"}
+                disabled={!canManageTask || isPriorityUpdating}
+                onChange={(e) => handlePriorityChange(e.target.value)}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5 } }}
+              >
+                <MenuItem value="LOW">LOW</MenuItem>
+                <MenuItem value="MEDIUM">MEDIUM</MenuItem>
+                <MenuItem value="HIGH">HIGH</MenuItem>
+                <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+              </TextField>
+            </Tooltip>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 4, md: 3.5 }}>
+            <Tooltip title={!canManageTask ? "Only Managers & Admins can reassign tasks" : ""}>
+              <TextField
+                select
+                size="medium"
+                fullWidth
+                label="Assignee"
+                value={task.assigneeId?._id || task.assigneeId || ""}
+                disabled={!canManageTask || isAssigneeUpdating}
+                onChange={(e) => handleAssigneeChange(e.target.value)}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5 } }}
+              >
+                <MenuItem value="">Unassigned</MenuItem>
+                {projectMembers.map((m) => {
+                  const u = m.userId || {};
+                  return (
+                    <MenuItem key={u._id || m._id} value={u._id}>
+                      {u.name || u.email}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+            </Tooltip>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 12, md: 2.5 }}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <Calendar size={18} color="#64748B" />
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                  Due Date
+                </Typography>
+                <Typography variant="body2" fontWeight={700} color="text.primary">
+                  {formatDate(task.dueDate)}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
       </Paper>
 
-      {/* Tabs for Comments vs Activity Log */}
-      <Paper elevation={0} sx={{ mb: 3, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
-        <Tabs
-          value={activeTab}
-          onChange={(e, val) => setActiveTab(val)}
-          indicatorColor="primary"
-          textColor="primary"
-        >
-          <Tab icon={<MessageSquare size={18} />} iconPosition="start" label="Comments" sx={{ fontWeight: 700 }} />
-          <Tab icon={<Activity size={18} />} iconPosition="start" label="Activity History" sx={{ fontWeight: 700 }} />
-        </Tabs>
+      {/* Task Comments Section Card (Full Width) */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2.5, sm: 3.5 },
+          borderRadius: 3.5,
+          border: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+        }}
+      >
+        <TaskCommentsSection projectId={projectId} taskId={taskId} />
       </Paper>
-
-      {/* Tab Panels */}
-      {activeTab === 0 && <TaskCommentsSection projectId={projectId} taskId={taskId} />}
-      {activeTab === 1 && <ActivityTimeline projectId={projectId} taskId={taskId} />}
 
       {/* Edit Modal */}
-      <EditTaskDialog
-        open={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        projectId={projectId}
-        task={task}
-        canManageTask={canManageTask}
-      />
+      {canManageTask && (
+        <EditTaskDialog
+          open={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          task={task}
+          projectId={projectId}
+          canManageTask={canManageTask}
+          onSuccess={refetch}
+        />
+      )}
     </Box>
   );
 };

@@ -5,6 +5,7 @@ const {
   login,
   logout,
   getMe,
+  searchUsers,
 } = require("../controllers/auth.controller");
 
 const { authenticate } = require("../middlewares/auth");
@@ -37,5 +38,10 @@ router.post("/logout", authenticate, logout);
  * GET /api/auth/me
  */
 router.get("/me", authenticate, getMe);
+
+/**
+ * GET /api/auth/users/search
+ */
+router.get("/users/search", authenticate, searchUsers);
 
 module.exports = router;

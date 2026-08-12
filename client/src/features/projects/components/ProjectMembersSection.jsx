@@ -35,14 +35,14 @@ import {
   useUpdateProjectMemberRoleMutation,
   useRemoveProjectMemberMutation,
 } from "../api/projectApi";
-import { useGetMembersQuery } from "../../organizations/api/organizationApi";
+import { useGetMembersQuery, useGetMyOrganizationsQuery } from "../../organizations/api/organizationApi";
 import StatusChip from "../../../components/common/StatusChip";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import ErrorState from "../../../components/common/ErrorState";
 import { formatError } from "../../../utils/formatError";
 
 const ProjectMembersSection = ({ projectId }) => {
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
   const {
     data: projectMembersData,
@@ -59,6 +59,13 @@ const ProjectMembersSection = ({ projectId }) => {
     skip: !currentOrganization?._id,
   });
 
+  const { data: orgData } = useGetMyOrganizationsQuery();
+  const orgs = orgData?.data || [];
+  const currentOrgItem = orgs.find((item) => {
+    const orgId = item.organization?._id || item.organization || item._id;
+    return orgId === currentOrganization?._id;
+  });
+
   const [addProjectMember, { isLoading: isAdding }] = useAddProjectMemberMutation();
   const [updateMemberRole] = useUpdateProjectMemberRoleMutation();
   const [removeMember] = useRemoveProjectMemberMutation();
@@ -73,6 +80,20 @@ const ProjectMembersSection = ({ projectId }) => {
 
   const projectMembers = projectMembersData?.data || [];
   const orgMembers = orgMembersData?.data || [];
+
+  // Determine if current user has Manager or Admin rights to alter project members
+  const currentUserMember = projectMembers.find(
+    (m) => (m.userId?._id || m.userId || m._id) === user?._id
+  );
+  const projectRole = currentUserMember?.role;
+  const orgRole = currentOrgItem?.role || currentOrganization?.role || user?.role;
+
+  const isOrgAdminOrOwner =
+    orgRole === "OWNER" ||
+    orgRole === "ADMIN" ||
+    user?.systemRole === "SUPER_ADMIN";
+
+  const canManageMembers = isOrgAdminOrOwner || projectRole === "MANAGER";
 
   // Filter out org members who are already in the project
   const availableUsers = orgMembers.filter((m) => {
@@ -178,24 +199,26 @@ const ProjectMembersSection = ({ projectId }) => {
           </Typography>
         </div>
 
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<UserPlus size={16} />}
-          onClick={() => setIsAddOpen(true)}
-          sx={{
-            textTransform: "none",
-            fontWeight: 700,
-            px: 2.5,
-            py: 1,
-            borderRadius: 2.5,
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-            boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-          }}
-        >
-          Add Project Member
-        </Button>
+        {canManageMembers && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<UserPlus size={16} />}
+            onClick={() => setIsAddOpen(true)}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              px: 2.5,
+              py: 1,
+              borderRadius: 2.5,
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+            }}
+          >
+            Add Project Member
+          </Button>
+        )}
       </div>
 
       {actionError && (
@@ -215,7 +238,9 @@ const ProjectMembersSection = ({ projectId }) => {
               <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Member</TableCell>
               <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Email</TableCell>
               <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Project Role</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, color: "#475569" }}>Action</TableCell>
+              {canManageMembers && (
+                <TableCell align="right" sx={{ fontWeight: 700, color: "#475569" }}>Action</TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -247,11 +272,13 @@ const ProjectMembersSection = ({ projectId }) => {
                     <StatusChip label={member.role || "MEMBER"} />
                   </TableCell>
 
-                  <TableCell align="right">
-                    <IconButton size="small" onClick={(e) => handleOpenMenu(e, member)}>
-                      <MoreVertical size={16} />
-                    </IconButton>
-                  </TableCell>
+                  {canManageMembers && (
+                    <TableCell align="right">
+                      <IconButton size="small" onClick={(e) => handleOpenMenu(e, member)}>
+                        <MoreVertical size={16} />
+                      </IconButton>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
@@ -260,85 +287,89 @@ const ProjectMembersSection = ({ projectId }) => {
       </TableContainer>
 
       {/* Role Action Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleCloseMenu}
-      >
-        <MenuItem onClick={() => handleRoleChange("MANAGER")}>
-          Set Role as MANAGER
-        </MenuItem>
-        <MenuItem onClick={() => handleRoleChange("MEMBER")}>
-          Set Role as MEMBER
-        </MenuItem>
-        <MenuItem onClick={handleRemove} sx={{ color: "error.main" }}>
-          Remove from Project
-        </MenuItem>
-      </Menu>
+      {canManageMembers && (
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={handleCloseMenu}
+        >
+          <MenuItem onClick={() => handleRoleChange("MANAGER")}>
+            Set Role as MANAGER
+          </MenuItem>
+          <MenuItem onClick={() => handleRoleChange("MEMBER")}>
+            Set Role as MEMBER
+          </MenuItem>
+          <MenuItem onClick={handleRemove} sx={{ color: "error.main" }}>
+            Remove from Project
+          </MenuItem>
+        </Menu>
+      )}
 
-      {/* Add Member Modal - Medium Field Size & Explicit mb: 3 Spacing */}
-      <Dialog open={isAddOpen} onClose={() => setIsAddOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800, pt: 3, px: 3, pb: 1, fontSize: "1.25rem" }}>
-          Add Member to Project
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 3, py: 3.5 }}>
-          <Box component="form" id="add-project-member-form" onSubmit={handleAddMember} display="flex" flexDirection="column">
-            <FormControl fullWidth size="medium" sx={{ mb: 3 }}>
-              <InputLabel>Select Team Member</InputLabel>
-              <Select
-                value={selectedUserId}
-                label="Select Team Member"
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                required
-                size="medium"
-              >
-                {availableUsers.map((m) => {
-                  const u = m.userId || {};
-                  return (
-                    <MenuItem key={u._id} value={u._id}>
-                      {u.name} ({u.email})
-                    </MenuItem>
-                  );
-                })}
-              </Select>
-            </FormControl>
+      {/* Add Member Modal */}
+      {canManageMembers && (
+        <Dialog open={isAddOpen} onClose={() => setIsAddOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 800, pt: 3, px: 3, pb: 1, fontSize: "1.25rem" }}>
+            Add Member to Project
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 3, py: 3.5 }}>
+            <Box component="form" id="add-project-member-form" onSubmit={handleAddMember} display="flex" flexDirection="column">
+              <FormControl fullWidth size="medium" sx={{ mb: 3 }}>
+                <InputLabel>Select Team Member</InputLabel>
+                <Select
+                  value={selectedUserId}
+                  label="Select Team Member"
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  required
+                  size="medium"
+                >
+                  {availableUsers.map((m) => {
+                    const u = m.userId || {};
+                    return (
+                      <MenuItem key={u._id} value={u._id}>
+                        {u.name} ({u.email})
+                      </MenuItem>
+                    );
+                  })}
+                </Select>
+              </FormControl>
 
-            <FormControl fullWidth size="medium">
-              <InputLabel>Project Role</InputLabel>
-              <Select
-                value={selectedRole}
-                label="Project Role"
-                onChange={(e) => setSelectedRole(e.target.value)}
-                size="medium"
-              >
-                <MenuItem value="MANAGER">MANAGER (Full control over project tasks & settings)</MenuItem>
-                <MenuItem value="MEMBER">MEMBER (Can view tasks, create & comment)</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2.5 }}>
-          <Button onClick={() => setIsAddOpen(false)} color="inherit" sx={{ fontWeight: 600 }}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            form="add-project-member-form"
-            variant="contained"
-            disabled={isAdding || !selectedUserId}
-            sx={{
-              fontWeight: 700,
-              textTransform: "none",
-              px: 3,
-              py: 1,
-              borderRadius: 2.5,
-              boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
-            }}
-          >
-            {isAdding ? "Adding..." : "Add Member"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <FormControl fullWidth size="medium">
+                <InputLabel>Project Role</InputLabel>
+                <Select
+                  value={selectedRole}
+                  label="Project Role"
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  size="medium"
+                >
+                  <MenuItem value="MANAGER">MANAGER (Full control over project tasks & settings)</MenuItem>
+                  <MenuItem value="MEMBER">MEMBER (Can view tasks, create & comment)</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2.5 }}>
+            <Button onClick={() => setIsAddOpen(false)} color="inherit" sx={{ fontWeight: 600 }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="add-project-member-form"
+              variant="contained"
+              disabled={isAdding || !selectedUserId}
+              sx={{
+                fontWeight: 700,
+                textTransform: "none",
+                px: 3,
+                py: 1,
+                borderRadius: 2.5,
+                boxShadow: "0 4px 14px rgba(79, 70, 229, 0.3)",
+              }}
+            >
+              {isAdding ? "Adding..." : "Add Member"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

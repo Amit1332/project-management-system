@@ -45,7 +45,7 @@ const actionLabels = {
   COMMENT_ADDED: "added a comment",
 };
 
-const ActivityTimeline = ({ projectId, taskId }) => {
+const ActivityTimeline = ({ projectId, taskId, showTitle = false }) => {
   const { currentOrganization } = useSelector((state) => state.auth);
 
   const projectActivityQuery = useGetProjectActivityQuery(
@@ -244,90 +244,81 @@ const ActivityTimeline = ({ projectId, taskId }) => {
 
   return (
     <Box>
-      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-        <Activity size={20} color="#eb4634" />
-        <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
-          Activity History
-        </Typography>
-      </div>
+      {showTitle && (
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+          <Activity size={20} color="#eb4634" />
+          <Typography variant="h6" fontWeight={800} color="text.primary" letterSpacing="-0.02em">
+            Activity History
+          </Typography>
+        </div>
+      )}
 
       {activities.length === 0 ? (
         <EmptyState
           icon={Activity}
           title="No activity recorded"
-          description="Activity logs will automatically record task and project actions as they occur."
+          description="Activity logs will automatically record task actions as they occur."
         />
       ) : (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 3.5,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-          }}
-        >
-          <Box display="flex" flexDirection="column">
-            {activities.map((item, idx) => {
-              const user = item.userId || {};
+        <Box display="flex" flexDirection="column">
+          {activities.map((item, idx) => {
+            const user = item.userId || {};
 
-              return (
-                <React.Fragment key={item._id || idx}>
-                  {idx > 0 && <Divider sx={{ my: 1.5 }} />}
+            return (
+              <React.Fragment key={item._id || idx}>
+                {idx > 0 && <Divider sx={{ my: 1.5 }} />}
 
-                  {/* Strict Horizontal Activity Row */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "16px",
-                      width: "100%",
-                      padding: "4px 0",
-                    }}
-                  >
-                    {/* Left Side: Avatar + User Name + Action Phrase + Status/Priority Chips */}
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", flex: 1, minWidth: 0, flexWrap: "wrap" }}>
-                      <Avatar
-                        src={user.avatar}
-                        sx={{
-                          width: 34,
-                          height: 34,
-                          bgcolor: "#eb4634",
-                          fontSize: "0.75rem",
-                          fontWeight: 700,
-                          borderRadius: "8px",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {getInitials(user.name)}
-                      </Avatar>
+                {/* Strict Horizontal Activity Row */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "16px",
+                    width: "100%",
+                    padding: "4px 0",
+                  }}
+                >
+                  {/* Left Side: Avatar + User Name + Action Phrase + Status/Priority Chips */}
+                  <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", flex: 1, minWidth: 0, flexWrap: "wrap" }}>
+                    <Avatar
+                      src={user.avatar}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        bgcolor: "#eb4634",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        borderRadius: "8px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {getInitials(user.name)}
+                    </Avatar>
 
-                      <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
-                        <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.875rem" }}>
-                          {user.name || "User"}
-                        </span>
-
-                        {renderActionPhrase(item)}
-
-                        {renderMetadataDetails(item)}
-                      </div>
-                    </div>
-
-                    {/* Right Side: Relative Timestamp */}
-                    <div style={{ flexShrink: 0, textAlign: "right" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>
-                        {formatRelativeDate(item.createdAt)}
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "8px", flexWrap: "wrap", minWidth: 0 }}>
+                      <span style={{ fontWeight: 800, color: "#0F172A", fontSize: "0.875rem" }}>
+                        {user.name || "User"}
                       </span>
+
+                      {renderActionPhrase(item)}
+
+                      {renderMetadataDetails(item)}
                     </div>
                   </div>
-                </React.Fragment>
-              );
-            })}
-          </Box>
-        </Paper>
+
+                  {/* Right Side: Relative Timestamp */}
+                  <div style={{ flexShrink: 0, textAlign: "right" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#64748B", fontWeight: 600 }}>
+                      {formatRelativeDate(item.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </Box>
       )}
     </Box>
   );

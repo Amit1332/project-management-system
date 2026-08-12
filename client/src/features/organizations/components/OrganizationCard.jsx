@@ -20,12 +20,16 @@ const OrganizationCard = ({ item }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { currentOrganization } = useSelector((state) => state.auth);
+  const { user, currentOrganization } = useSelector((state) => state.auth);
 
   const org = item.organization || item;
   const role = item.role || "MEMBER";
 
   const isSelected = currentOrganization?._id === org._id;
+
+  // Show Manage button for all roles EXCEPT when role is strictly MEMBER
+  const isMemberRole = role === "MEMBER" && user?.systemRole !== "SUPER_ADMIN";
+  const canManageOrg = !isMemberRole;
 
   const handleSelect = () => {
     dispatch(setCurrentOrganization(org));
@@ -119,7 +123,7 @@ const OrganizationCard = ({ item }) => {
         </Typography>
       </CardContent>
 
-      {/* Bottom Action Bar (No Top Divider, Space Between, Padded Left & Right) */}
+      {/* Bottom Action Bar */}
       <Box
         sx={{
           px: 3,
@@ -151,16 +155,19 @@ const OrganizationCard = ({ item }) => {
           </Button>
         )}
 
-        <Button
-          size="small"
-          variant="outlined"
-          color="primary"
-          onClick={handleManage}
-          endIcon={<ArrowRight size={16} />}
-          sx={{ textTransform: "none", borderRadius: 2.5, fontWeight: 700, px: 2 }}
-        >
-          Manage
-        </Button>
+        {/* Hide Manage button ONLY if role in organization is MEMBER */}
+        {canManageOrg && (
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            onClick={handleManage}
+            endIcon={<ArrowRight size={16} />}
+            sx={{ textTransform: "none", borderRadius: 2.5, fontWeight: 700, px: 2 }}
+          >
+            Manage
+          </Button>
+        )}
       </Box>
     </Card>
   );
